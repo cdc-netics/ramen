@@ -1,0 +1,96 @@
+<div class="logs-container">
+  <div class="header">
+    <div class="header-left">
+      <h1>Logs del Sistema</h1>
+      <p class="subtitle">Registro de actividades y eventos</p>
+    </div>
+    <button mat-raised-button color="primary" (click)="exportLogs()">
+      <mat-icon>download</mat-icon>
+      Exportar CSV
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <div class="filters-grid">
+      <div class="filter-field">
+        <label>Nivel</label>
+        <select [(ngModel)]="filterLevel" (change)="applyFilters()">
+          <option value="all">Todos</option>
+          <option value="info">Info</option>
+          <option value="success">Success</option>
+          <option value="warning">Warning</option>
+          <option value="error">Error</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label>Usuario</label>
+        <input 
+          type="text" 
+          [(ngModel)]="filterUser" 
+          (input)="applyFilters()" 
+          placeholder="Filtrar por usuario..."
+        />
+      </div>
+
+      <div class="filter-field">
+        <label>Acción</label>
+        <input 
+          type="text" 
+          [(ngModel)]="filterAction" 
+          (input)="applyFilters()" 
+          placeholder="Filtrar por acción..."
+        />
+      </div>
+
+      <div class="filter-field">
+        <button mat-button (click)="clearFilters()">
+          <mat-icon>clear</mat-icon>
+          Limpiar Filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Logs -->
+  <div class="logs-table-container">
+    <div class="logs-count">
+      Mostrando {{ filteredLogs.length }} de {{ logs.length }} registros
+    </div>
+
+    <div class="log-entry" *ngFor="let log of filteredLogs" [ngClass]="getLevelClass(log.level)">
+      <div class="log-timestamp">
+        <div class="time">{{ formatTime(log.timestamp) }}</div>
+        <div class="date">{{ log.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</div>
+      </div>
+
+      <div class="log-level">
+        <mat-icon [ngClass]="getLevelClass(log.level)">{{ getLevelIcon(log.level) }}</mat-icon>
+        <span>{{ log.level }}</span>
+      </div>
+
+      <div class="log-user">
+        <div class="user-avatar">{{ log.user.charAt(0).toUpperCase() }}</div>
+        <span>{{ log.user }}</span>
+      </div>
+
+      <div class="log-action">
+        <strong>{{ log.action }}</strong>
+        <span class="resource">{{ log.resource }}</span>
+      </div>
+
+      <div class="log-details">
+        {{ log.details }}
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="filteredLogs.length === 0">
+      <mat-icon>inbox</mat-icon>
+      <p>No hay logs que coincidan con los filtros</p>
+      <button mat-raised-button color="primary" (click)="clearFilters()">
+        Ver Todos
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,173 @@
+<div class="code-editor-container">
+  <div class="editor-header">
+    <button mat-icon-button (click)="back()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="module-info">
+      <h1>
+        <mat-icon>code</mat-icon>
+        {{ module?.name }}
+      </h1>
+      <span class="framework-badge">{{ module?.framework }}</span>
+    </div>
+    <div class="header-actions">
+      <button mat-raised-button (click)="saveFile()" [disabled]="!currentFile">
+        <mat-icon>save</mat-icon>
+        Guardar
+      </button>
+      <button mat-raised-button color="primary" (click)="saveAll()">
+        <mat-icon>save_all</mat-icon>
+        Guardar Todo
+      </button>
+    </div>
+  </div>
+
+  <div class="editor-workspace">
+    <!-- File Explorer -->
+    <div class="file-explorer">
+      <div class="explorer-header">
+        <span>Archivos</span>
+        <div class="explorer-actions">
+          <button mat-icon-button (click)="newFile()" matTooltip="Nuevo archivo">
+            <mat-icon>note_add</mat-icon>
+          </button>
+          <button mat-icon-button (click)="newFolder()" matTooltip="Nueva carpeta">
+            <mat-icon>create_new_folder</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="file-tree">
+        <div *ngFor="let item of fileTree" class="tree-item">
+          <div 
+            class="file-item"
+            [class.active]="currentFile === item"
+            (click)="selectFile(item)"
+          >
+            <mat-icon class="file-icon">{{ getFileIcon(item) }}</mat-icon>
+            <span class="file-name">{{ item.name }}</span>
+            <button 
+              mat-icon-button 
+              class="delete-btn"
+              (click)="deleteFile(item); $event.stopPropagation()"
+              *ngIf="item.type === 'file'"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div *ngIf="item.children" class="folder-children">
+            <div 
+              *ngFor="let child of item.children"
+              class="file-item child"
+              [class.active]="currentFile === child"
+              (click)="selectFile(child)"
+            >
+              <mat-icon class="file-icon">{{ getFileIcon(child) }}</mat-icon>
+              <span class="file-name">{{ child.name }}</span>
+              <button 
+                mat-icon-button 
+                class="delete-btn"
+                (click)="deleteFile(child); $event.stopPropagation()"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="files.length === 0">
+          <mat-icon>folder_open</mat-icon>
+          <p>No hay archivos</p>
+          <button mat-raised-button color="primary" (click)="newFile()">
+            Crear Primer Archivo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Editor -->
+    <div class="code-editor-panel">
+      <div class="editor-tabs" *ngIf="currentFile">
+        <div class="tab active">
+          <mat-icon>{{ getFileIcon(currentFile) }}</mat-icon>
+          <span>{{ currentFile.name }}</span>
+        </div>
+      </div>
+
+      <div class="editor-area" *ngIf="currentFile">
+        <textarea 
+          [(ngModel)]="currentFile.content"
+          class="code-textarea"
+          spellcheck="false"
+          placeholder="Escribe tu código aquí..."
+        ></textarea>
+      </div>
+
+      <div class="no-file-selected" *ngIf="!currentFile">
+        <mat-icon>code_off</mat-icon>
+        <p>Selecciona un archivo para editar</p>
+        <p class="hint">o crea uno nuevo usando los botones de arriba</p>
+      </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel">
+      <h3>
+        <mat-icon>info</mat-icon>
+        Información del Módulo
+      </h3>
+
+      <div class="info-section">
+        <label>Framework</label>
+        <p>{{ module?.framework }}</p>
+      </div>
+
+      <div class="info-section">
+        <label>Puerto de Desarrollo</label>
+        <p>{{ module?.devPort }}</p>
+      </div>
+
+      <div class="info-section" *ngIf="module?.database !== 'none'">
+        <label>Base de Datos</label>
+        <p>{{ module?.database }}</p>
+        <small>Colección: {{ module?.dbCollection }}</small>
+      </div>
+
+      <div class="info-section" *ngIf="module?.version">
+        <label>Versión</label>
+        <p>v{{ module?.version }}</p>
+      </div>
+
+      <div class="info-section" *ngIf="module?.dependencies">
+        <label>Dependencias</label>
+        <pre class="dependencies">{{ module?.dependencies }}</pre>
+        <button mat-stroked-button>
+          <mat-icon>download</mat-icon>
+          Instalar
+        </button>
+      </div>
+
+      <div class="info-section" *ngIf="module?.envVars">
+        <label>Variables de Entorno</label>
+        <pre class="env-vars">{{ module?.envVars }}</pre>
+      </div>
+
+      <div class="info-section">
+        <label>Acciones</label>
+        <button mat-raised-button color="primary" class="action-btn">
+          <mat-icon>play_arrow</mat-icon>
+          Ejecutar en Puerto {{ module?.devPort }}
+        </button>
+        <button mat-raised-button class="action-btn">
+          <mat-icon>build</mat-icon>
+          Build
+        </button>
+        <button mat-raised-button class="action-btn">
+          <mat-icon>cloud_upload</mat-icon>
+          Deploy
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

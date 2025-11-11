@@ -1,0 +1,130 @@
+<div class="access-container">
+  <div class="header">
+    <h1>👥 Permisos por Usuario a Módulos</h1>
+    <p class="subtitle">Asigna acceso individual de usuarios a módulos específicos</p>
+  </div>
+
+  <div class="instructions">
+    <mat-icon>info</mat-icon>
+    <div>
+      <strong>¿Cómo funciona?</strong>
+      <p>Marca las casillas para dar acceso a usuarios específicos a módulos específicos.</p>
+      <ul>
+        <li><strong>Leer:</strong> El usuario puede VER el módulo</li>
+        <li><strong>Ejecutar:</strong> El usuario puede USAR el módulo</li>
+        <li><strong>Escribir:</strong> El usuario puede MODIFICAR configuraciones del módulo</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quick-actions" *ngIf="users.length > 0">
+    <h3>Acciones Rápidas</h3>
+    <div class="action-buttons">
+      <button mat-stroked-button color="primary" (click)="selectAll(users[0]._id, 'canRead')">
+        <mat-icon>visibility</mat-icon>
+        Dar acceso de LECTURA a todos los módulos
+      </button>
+      <button mat-stroked-button (click)="unselectAll(users[0]._id, 'canRead')">
+        <mat-icon>visibility_off</mat-icon>
+        Quitar todos los accesos de LECTURA
+      </button>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <mat-icon>hourglass_empty</mat-icon>
+    <span>Cargando datos...</span>
+  </div>
+
+  <div class="access-table-container" *ngIf="!loading && users.length > 0 && modules.length > 0">
+    <table class="access-table">
+      <thead>
+        <tr>
+          <th class="user-header">Usuario</th>
+          <th class="module-header" *ngFor="let module of modules" colspan="3">
+            {{ module.name }}
+          </th>
+        </tr>
+        <tr>
+          <th></th>
+          <ng-container *ngFor="let module of modules">
+            <th class="permission-header">Leer</th>
+            <th class="permission-header">Ejecutar</th>
+            <th class="permission-header">Escribir</th>
+          </ng-container>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td class="user-cell">
+            <div class="user-info">
+              <strong>{{ user.username }}</strong>
+              <small>{{ user.fullName }}</small>
+              <div class="user-roles">
+                <span class="role-badge" *ngFor="let role of user.roles" [ngClass]="role.toLowerCase()">
+                  {{ role }}
+                </span>
+              </div>
+            </div>
+          </td>
+          
+          <ng-container *ngFor="let module of modules">
+            <!-- Leer -->
+            <td class="permission-cell" 
+                [class.active]="hasAccess(user._id, module._id, 'canRead')"
+                (click)="toggleAccess(user._id, module._id, 'canRead')">
+              <mat-icon>{{ hasAccess(user._id, module._id, 'canRead') ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            </td>
+            
+            <!-- Ejecutar -->
+            <td class="permission-cell" 
+                [class.active]="hasAccess(user._id, module._id, 'canExecute')"
+                (click)="toggleAccess(user._id, module._id, 'canExecute')">
+              <mat-icon>{{ hasAccess(user._id, module._id, 'canExecute') ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            </td>
+            
+            <!-- Escribir -->
+            <td class="permission-cell" 
+                [class.active]="hasAccess(user._id, module._id, 'canWrite')"
+                (click)="toggleAccess(user._id, module._id, 'canWrite')">
+              <mat-icon>{{ hasAccess(user._id, module._id, 'canWrite') ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            </td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && (users.length === 0 || modules.length === 0)">
+    <mat-icon>warning</mat-icon>
+    <h3>No hay datos para mostrar</h3>
+    <p *ngIf="users.length === 0">No hay usuarios creados. Crea usuarios primero.</p>
+    <p *ngIf="modules.length === 0">No hay módulos disponibles. Instala módulos primero.</p>
+  </div>
+
+  <div class="message-box" *ngIf="message" 
+       [class.success]="message.startsWith('✅')" 
+       [class.error]="message.startsWith('❌')">
+    {{ message }}
+  </div>
+
+  <div class="actions" *ngIf="users.length > 0 && modules.length > 0">
+    <button mat-raised-button color="primary" (click)="saveAccess()" [disabled]="loading">
+      <mat-icon>{{ loading ? 'hourglass_empty' : 'save' }}</mat-icon>
+      {{ loading ? 'Guardando...' : 'Guardar Permisos' }}
+    </button>
+  </div>
+
+  <div class="legend">
+    <h3>Ejemplo de Uso</h3>
+    <div class="example">
+      <p><strong>Escenario:</strong> Quieres que "pepe", "jose" y "matias" solo accedan al módulo "Bitácora", pero solo "pepe" y "jose" puedan acceder a "Hallazgos".</p>
+      <ol>
+        <li>En la fila de <strong>pepe</strong>, marca ✅ en las columnas de <strong>Bitácora</strong> y <strong>Hallazgos</strong></li>
+        <li>En la fila de <strong>jose</strong>, marca ✅ en las columnas de <strong>Bitácora</strong> y <strong>Hallazgos</strong></li>
+        <li>En la fila de <strong>matias</strong>, marca ✅ solo en la columna de <strong>Bitácora</strong></li>
+        <li>Click en "Guardar Permisos"</li>
+      </ol>
+    </div>
+  </div>
+</div>

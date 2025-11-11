@@ -1,0 +1,255 @@
+# Business Source License 1.1
+
+## Licencia
+
+**Business Source License 1.1**
+
+## Parámetros
+
+- **Licenciante:** Athan 
+- **Trabajo Licenciado:** Ramen SOC - Orquestador de Módulos v1.0
+- **Concesión de Uso Adicional:** Uso No Comercial Permitido (ver detalles abajo)
+- **Fecha de Cambio:** 11 de noviembre de 2031 (6 años desde la primera distribución pública)
+- **Licencia de Cambio:** MIT License
+
+---
+
+## Términos
+
+El Licenciante por la presente le otorga el derecho de copiar, modificar, crear trabajos derivados, redistribuir y hacer uso no productivo del Trabajo Licenciado. El Licenciante puede hacer una Concesión de Uso Adicional, abajo, permitiendo uso productivo limitado.
+
+Efectivo en la **Fecha de Cambio** (11 de noviembre de 2031), o el cuarto aniversario de la primera distribución públicamente disponible de una versión específica del Trabajo Licenciado bajo esta Licencia, lo que ocurra primero, el Licenciante por la presente le otorga derechos bajo los términos de la **Licencia de Cambio** (MIT License), y los derechos otorgados en el párrafo anterior terminan.
+
+Si su uso del Trabajo Licenciado no cumple con los requisitos actualmente en vigor como se describe en esta Licencia, debe comprar una licencia comercial del Licenciante, sus entidades afiliadas o revendedores autorizados, o debe abstenerse de usar el Trabajo Licenciado.
+
+Todas las copias del Trabajo Licenciado original y modificado, y trabajos derivados del Trabajo Licenciado, están sujetos a esta Licencia. Esta Licencia se aplica por separado para cada versión del Trabajo Licenciado y la Fecha de Cambio puede variar para cada versión del Trabajo Licenciado liberada por el Licenciante.
+
+Debe mostrar conspicuamente esta Licencia en cada copia original o modificada del Trabajo Licenciado. Si recibe el Trabajo Licenciado en forma original o modificada de un tercero, los términos y condiciones establecidos en esta Licencia se aplican a su uso de ese trabajo.
+
+Cualquier uso del Trabajo Licenciado en violación de esta Licencia terminará automáticamente sus derechos bajo esta Licencia para la versión actual y todas las otras versiones del Trabajo Licenciado.
+
+Esta Licencia no le otorga ningún derecho en las marcas comerciales, marcas de servicio, nombres comerciales o logotipos del Licenciante.
+
+---
+
+## Avisos
+
+### Copyright
+
+**Copyright (c) 2025 Synet SPA - Ramen SOC**
+
+Primera distribución pública: 11 de noviembre de 2025
+
+---
+
+## Concesión de Uso Adicional
+
+### ✅ Uso No Comercial Permitido
+
+Puede hacer uso del Trabajo Licenciado para:
+
+- ✅ **Propósitos de investigación**
+- ✅ **Propósitos académicos**
+- ✅ **Propósitos de evaluación**
+- ✅ **Uso personal, no comercial**
+- ✅ **Evaluación interna del negocio** (no excediendo 90 días de prueba)
+- ✅ **Desarrollo y testing**
+
+### ❌ Restricciones de Uso Comercial
+
+**NO** puede usar el Trabajo Licenciado para:
+
+- ❌ Integración en productos propietarios para distribución comercial
+- ❌ Reventa como producto independiente o como parte de otro producto
+- ❌ Ofertas de **Software como Servicio (SaaS)** para terceros
+- ❌ Monetización directa o indirecta del software
+- ❌ Despliegue en producción en entornos comerciales sin una licencia comercial
+- ❌ Uso como orquestador en servicios SOC comerciales
+
+### ✅ Servicios Alrededor del Software - PERMITIDO
+
+**SÍ** puede ofrecer los siguientes servicios relacionados con el Trabajo Licenciado:
+
+- ✅ **Servicios de instalación y configuración**
+- ✅ **Soporte técnico y mantenimiento**
+- ✅ **Servicios de consultoría y personalización**
+- ✅ **Servicios de capacitación y educación**
+- ✅ **Desarrollo de módulos personalizados**
+- ✅ **Integración con sistemas existentes**
+- ✅ **Servicios de hosting** (siempre que el software en sí no se venda como producto)
+
+**Siempre que:**
+- El software en sí **no se venda como producto**
+- Se cumpla con todos los demás términos de esta Licencia
+- Se mantenga el aviso de copyright y licencia
+
+---
+
+## Definiciones
+
+### Uso Comercial
+
+"**Uso Comercial**" significa cualquier uso del Trabajo Licenciado que esté principalmente destinado o dirigido hacia ventaja comercial o compensación monetaria. Esto incluye:
+
+1. Usar el Trabajo Licenciado para proporcionar servicios o productos por los cuales cobra tarifas **donde el software es parte del producto vendido**
+2. Integrar el Trabajo Licenciado en productos que se venden o licencian
+3. Usar el Trabajo Licenciado en un entorno de producción comercial como servicio SOC de pago
+4. Ofrecer el Trabajo Licenciado como parte de una plataforma SaaS
+5. Distribuir el Trabajo Licenciado como parte de un producto comercial
+
+### Uso No Comercial
+
+"**Uso No Comercial**" significa:
+
+- Uso interno en organizaciones sin fines de lucro
+- Uso educativo en instituciones académicas
+- Uso personal sin compensación monetaria
+- Evaluación temporal (máximo 90 días) en entornos empresariales
+- Investigación y desarrollo
+
+---
+
+## Licencia de Cambio
+
+**MIT License** 
+
+Efectiva a partir del **11 de noviembre de 2031**
+
+Después de esta fecha, el software se licencia automáticamente bajo los términos de MIT License, permitiendo uso comercial sin restricciones.
+
+---
+
+## Fecha de Cambio
+
+**11 de noviembre de 2029**
+
+(6 años desde la primera distribución pública: 11 de noviembre de 2025)
+
+Después de esta fecha, todos los términos de Business Source License 1.1 expiran y el software se rige completamente por MIT License.
+
+---
+
+## Descargo de Responsabilidad de Garantía
+
+EL TRABAJO LICENCIADO SE PROPORCIONA "**TAL COMO ESTÁ**" SIN GARANTÍAS O CONDICIONES DE NINGÚN TIPO, YA SEA EXPRESAS O IMPLÍCITAS, INCLUYENDO SIN LIMITACIÓN CUALQUIER GARANTÍA O CONDICIONES DE TÍTULO, NO INFRACCIÓN, COMERCIABILIDAD O IDONEIDAD PARA UN PROPÓSITO PARTICULAR.
+
+USTED ES ÚNICAMENTE RESPONSABLE DE DETERMINAR LA IDONEIDAD DE USAR O REDISTRIBUIR EL TRABAJO LICENCIADO Y ASUMIR CUALQUIER RIESGO ASOCIADO CON SU EJERCICIO DE PERMISOS BAJO ESTA LICENCIA.
+
+---
+
+## Limitación de Responsabilidad
+
+EN NINGÚN EVENTO Y BAJO NINGUNA TEORÍA LEGAL, YA SEA EN AGRAVIO (INCLUYENDO NEGLIGENCIA), CONTRATO, O DE OTRA MANERA, A MENOS QUE SEA REQUERIDO POR LA LEY APLICABLE (COMO ACTOS DELIBERADOS Y GROSERAMENTE NEGLIGENTES) O ACORDADO POR ESCRITO, EL LICENCIANTE SERÁ RESPONSABLE ANTE USTED POR DAÑOS, INCLUYENDO CUALQUIER DAÑO DIRECTO, INDIRECTO, ESPECIAL, INCIDENTAL O CONSECUENCIAL DE CUALQUIER CARÁCTER QUE SURJA COMO RESULTADO DE ESTA LICENCIA O DEL USO O INCAPACIDAD DE USAR EL TRABAJO LICENCIADO (INCLUYENDO PERO NO LIMITADO A DAÑOS POR PÉRDIDA DE BUENA VOLUNTAD, PARADA DE TRABAJO, FALLA O MAL FUNCIONAMIENTO DE COMPUTADORA, O CUALQUIER Y TODOS LOS OTROS DAÑOS O PÉRDIDAS COMERCIALES), INCLUSO SI EL LICENCIANTE HA SIDO ADVERTIDO DE LA POSIBILIDAD DE TALES DAÑOS.
+
+---
+
+## Información Adicional
+
+### Contacto para Licencias Comerciales
+
+Para obtener una licencia comercial o para consultas sobre el uso comercial del software:
+
+- **Organización:** -------
+- **Proyecto:** Ramen SOC - Orquestador de Módulos
+- **Contacto:** A través de GitHub Issues del repositorio
+- **Email:** [Agregar email de contacto comercial]
+
+### ¿Necesita una Licencia Comercial?
+
+Contáctenos si su caso de uso incluye:
+
+- Despliegue en producción para servicios SOC comerciales
+- Integración en productos comerciales
+- Ofertas SaaS basadas en Ramen SOC
+- Uso comercial más allá de los servicios permitidos
+
+---
+
+## Preguntas Frecuentes (FAQ)
+
+### ¿Puedo usar este software en mi empresa?
+
+✅ **Sí**, puede usarlo para:
+- Evaluación interna (hasta 90 días)
+- Propósitos no comerciales internos
+- Desarrollo y testing
+
+❌ **No** sin licencia comercial para:
+- Producción en servicios SOC de pago
+- Venta como producto
+- Servicios SaaS
+
+### ¿Puedo modificar el código?
+
+✅ **Sí**, puede modificar el código para uso no comercial. Las modificaciones deben mantener esta misma licencia hasta la Fecha de Cambio.
+
+### ¿Puedo ofrecer servicios de consultoría usando este software?
+
+✅ **Sí**, puede ofrecer:
+- Consultoría
+- Instalación
+- Soporte
+- Capacitación
+- Desarrollo de módulos personalizados
+
+**Siempre que no venda el software como producto.**
+
+### ¿Puedo crear módulos personalizados y venderlos?
+
+✅ **Sí**, puede desarrollar y vender módulos personalizados para Ramen SOC, siempre que:
+- El módulo sea su propio trabajo
+- No redistribuya Ramen SOC como parte del producto
+- Los clientes tengan su propia licencia de Ramen SOC (gratuita para uso no comercial o comercial si corresponde)
+
+### ¿Cuándo se convierte en MIT License?
+
+📅 El **11 de noviembre de 2031** (6 años después de la primera distribución pública), este software automáticamente se licencia bajo **MIT License**, permitiendo uso comercial sin restricciones.
+
+### ¿Puedo usar esto para un proyecto interno SOC sin pagar?
+
+✅ **Sí**, si es para uso interno de su organización sin ofrecer servicios SOC de pago a terceros.
+
+❌ **No**, si ofrece servicios SOC comerciales a clientes usando este software (requiere licencia comercial).
+
+### ¿Qué pasa si violo los términos?
+
+⚠️ Sus derechos bajo esta licencia **terminan automáticamente** para todas las versiones del software. Deberá:
+1. Dejar de usar el software inmediatamente
+2. Contactar al Licenciante para resolver la situación
+3. Obtener una licencia comercial si desea continuar
+
+---
+
+## Resumen Visual
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  BUSINESS SOURCE LICENSE 1.1 - Ramen SOC                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ✅ PERMITIDO (Sin licencia comercial):                     │
+│    • Uso personal, académico, investigación                 │
+│    • Evaluación empresarial (90 días)                       │
+│    • Desarrollo y testing                                   │
+│    • Servicios de consultoría e instalación                 │
+│    • Modificaciones para uso no comercial                   │
+│                                                              │
+│  ❌ REQUIERE LICENCIA COMERCIAL:                            │
+│    • Servicios SOC comerciales en producción                │
+│    • SaaS / Reventa del software                            │
+│    • Integración en productos comerciales                   │
+│                                                              │
+│  📅 CONVERSIÓN A MIT LICENSE:                               │
+│    • Fecha: 11 de noviembre de 2031                         │
+│    • Después: Uso comercial sin restricciones               │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+**Para más información sobre Business Source License 1.1:**  
+https://mariadb.com/bsl11/
+
+**Texto completo de esta licencia:**  
+Este archivo (LICENSE)

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo Third-Party - SSO Integration</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 100%;
+      padding: 2rem;
+    }
+
+    /* Login Form (se oculta cuando hay SSO) */
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-card h1 {
+      margin-bottom: 0.5rem;
+      color: #1f2937;
+    }
+
+    .login-card p {
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #374151;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* App Content (se muestra cuando está autenticado) */
+    .app-content {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .app-content h1 {
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+
+    .user-info {
+      background: #f3f4f6;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .user-info p {
+      margin: 0.5rem 0;
+      color: #4b5563;
+    }
+
+    .user-info strong {
+      color: #1f2937;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #667eea;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      margin-right: 0.5rem;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: #d1fae5;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: white;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Loading State -->
+    <div id="loading-state" class="loading">
+      <div class="spinner"></div>
+      <p>Verificando autenticación SSO...</p>
+    </div>
+
+    <!-- Login Form (se muestra si no hay SSO) -->
+    <div id="login-form" class="login-card hidden">
+      <h1>Iniciar Sesión</h1>
+      <p>Módulo Third-Party de Ejemplo</p>
+      
+      <form id="manual-login-form">
+        <div class="form-group">
+          <label for="username">Usuario</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit" class="btn">Iniciar Sesión</button>
+      </form>
+      
+      <div style="margin-top: 1rem; text-align: center; color: #6b7280; font-size: 0.875rem;">
+        💡 Este formulario solo aparece si NO hay token SSO del orquestador
+      </div>
+    </div>
+
+    <!-- App Content (se muestra cuando está autenticado) -->
+    <div id="app-content" class="app-content hidden">
+      <h1>¡Bienvenido! 🎉</h1>
+      
+      <div class="status">
+        <div class="status-dot"></div>
+        <span>Autenticado vía <strong>SSO del Orquestador</strong></span>
+      </div>
+
+      <div class="user-info">
+        <p><strong>Usuario:</strong> <span id="user-username"></span></p>
+        <p><strong>Nombre:</strong> <span id="user-fullname"></span></p>
+        <p><strong>Email:</strong> <span id="user-email"></span></p>
+        <p><strong>Roles:</strong> <span id="user-roles"></span></p>
+      </div>
+
+      <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+        <p style="color: #92400e; margin: 0;">
+          ✅ <strong>Sin doble login:</strong> El usuario no tuvo que ingresar usuario y contraseña otra vez.
+        </p>
+      </div>
+
+      <button class="btn" onclick="logout()" style="margin-top: 1rem;">
+        Cerrar Sesión
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // CONFIGURACIÓN
+    // ==========================================
+    const ORQUESTADOR_URL = 'http://localhost:4000';
+    const VALIDATE_SSO_ENDPOINT = `${ORQUESTADOR_URL}/api/auth/validate-sso`;
+
+    // ==========================================
+    // AL CARGAR LA PÁGINA
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      console.log('🔐 Módulo Third-Party iniciando...');
+      
+      // Método 1: Buscar token en URL (query parameter)
+      const urlParams = new URLSearchParams(window.location.search);
+      const ssoTokenFromUrl = urlParams.get('sso_token');
+      
+      if (ssoTokenFromUrl) {
+        console.log('✅ Token SSO detectado en URL');
+        await validateSSOToken(ssoTokenFromUrl);
+        // Limpiar URL (quitar token visible)
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+
+      // Método 2: Buscar token en localStorage (de sesión anterior)
+      const ssoTokenFromStorage = localStorage.getItem('sso_token');
+      
+      if (ssoTokenFromStorage) {
+        console.log('✅ Token SSO encontrado en localStorage');
+        await validateSSOToken(ssoTokenFromStorage);
+        return;
+      }
+
+      // Método 3: Escuchar postMessage del orquestador (iframe)
+      window.addEventListener('message', async (event) => {
+        // Validar origen (IMPORTANTE para seguridad)
+        if (event.origin !== ORQUESTADOR_URL) {
+          console.warn('⚠️ Mensaje de origen desconocido:', event.origin);
+          return;
+        }
+
+        if (event.data.type === 'SSO_TOKEN') {
+          console.log('✅ Token SSO recibido vía postMessage');
+          await validateSSOToken(event.data.token);
+        }
+      });
+
+      // Si no hay token, mostrar formulario de login manual
+      setTimeout(() => {
+        if (!isAuthenticated()) {
+          showLoginForm();
+        }
+      }, 2000); // Esperar 2s por si llega postMessage
+    });
+
+    // ==========================================
+    // VALIDAR TOKEN SSO CON ORQUESTADOR
+    // ==========================================
+    async function validateSSOToken(token) {
+      try {
+        console.log('🔍 Validando token con orquestador...');
+        
+        const response = await fetch(VALIDATE_SSO_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ token })
+        });
+
+        const result = await response.json();
+
+        if (result.valid) {
+          console.log('✅ Token válido:', result.user);
+          
+          // Guardar token y usuario
+          localStorage.setItem('sso_token', token);
+          localStorage.setItem('user', JSON.stringify(result.user));
+          
+          // Mostrar app
+          showApp(result.user);
+        } else {
+          console.error('❌ Token inválido:', result.error);
+          showLoginForm();
+        }
+      } catch (err) {
+        console.error('❌ Error validando SSO:', err);
+        showLoginForm();
+      }
+    }
+
+    // ==========================================
+    // MOSTRAR APP (autenticado)
+    // ==========================================
+    function showApp(user) {
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('app-content').classList.remove('hidden');
+
+      // Rellenar datos de usuario
+      document.getElementById('user-username').textContent = user.username;
+      document.getElementById('user-fullname').textContent = user.fullName || 'N/A';
+      document.getElementById('user-email').textContent = user.email || 'N/A';
+      
+      // Roles con badges
+      const rolesContainer = document.getElementById('user-roles');
+      rolesContainer.innerHTML = '';
+      (user.roles || []).forEach(role => {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = role;
+        rolesContainer.appendChild(badge);
+      });
+    }
+
+    // ==========================================
+    // MOSTRAR FORMULARIO DE LOGIN
+    // ==========================================
+    function showLoginForm() {
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('app-content').classList.add('hidden');
+    }
+
+    // ==========================================
+    // LOGIN MANUAL (sin SSO)
+    // ==========================================
+    document.getElementById('manual-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // Aquí harías login con tu propio sistema
+      // Para este ejemplo, simularemos un login exitoso
+      alert('Login manual no implementado en este ejemplo.\n\n' +
+            'En producción, aquí llamarías a tu propio endpoint de login.');
+    });
+
+    // ==========================================
+    // LOGOUT
+    // ==========================================
+    function logout() {
+      localStorage.removeItem('sso_token');
+      localStorage.removeItem('user');
+      showLoginForm();
+    }
+
+    // ==========================================
+    // HELPERS
+    // ==========================================
+    function isAuthenticated() {
+      return localStorage.getItem('sso_token') !== null;
+    }
+  </script>
+</body>
+</html>

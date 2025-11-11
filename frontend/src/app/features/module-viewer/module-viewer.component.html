@@ -1,0 +1,62 @@
+<div class="module-viewer-container">
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando módulo...</p>
+  </div>
+
+  <!-- Error state -->
+  <div *ngIf="error && !loading" class="error-state">
+    <mat-icon>error_outline</mat-icon>
+    <h2>Error al cargar módulo</h2>
+    <p>{{ error }}</p>
+  </div>
+
+  <!-- Module loaded -->
+  <div *ngIf="!loading && !error && module" class="module-content">
+    <!-- Module header -->
+    <div class="module-header">
+      <div class="module-info">
+        <mat-icon>{{ module.icon || 'security' }}</mat-icon>
+        <div>
+          <h2>{{ module.name }}</h2>
+          <p>{{ module.description }}</p>
+        </div>
+      </div>
+      <div class="module-meta">
+        <span class="badge" [class]="module.embedType">{{ module.embedType }}</span>
+        <span class="badge status" [class]="module.status">{{ module.status }}</span>
+      </div>
+    </div>
+
+    <!-- iframe for external modules -->
+    <div *ngIf="module.embedType === 'iframe'" class="iframe-container">
+      <iframe 
+        [src]="safeUrl" 
+        frameborder="0"
+        allowfullscreen
+        class="module-iframe"
+      ></iframe>
+    </div>
+
+    <!-- Link for external apps -->
+    <div *ngIf="module.embedType === 'link'" class="link-container">
+      <mat-icon>open_in_new</mat-icon>
+      <h3>Este módulo se abre en una nueva ventana</h3>
+      <p>{{ module.baseUrl }}</p>
+      <button mat-raised-button color="primary" (click)="openInNewTab()">
+        <mat-icon>launch</mat-icon>
+        Abrir Módulo
+      </button>
+    </div>
+
+    <!-- Proxy modules (local) -->
+    <div *ngIf="module.embedType === 'proxy'" class="iframe-container">
+      <iframe 
+        [src]="safeUrl" 
+        frameborder="0"
+        class="module-iframe"
+      ></iframe>
+    </div>
+  </div>
+</div>

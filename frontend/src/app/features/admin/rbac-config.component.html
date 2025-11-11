@@ -1,0 +1,135 @@
+<div class="rbac-container">
+  <div class="header">
+    <h1>Configuración RBAC</h1>
+    <p class="subtitle">Control de acceso basado en roles (Role-Based Access Control)</p>
+  </div>
+
+  <div class="rbac-table-container">
+    <table class="rbac-table">
+      <thead>
+        <tr>
+          <th class="role-header">Rol</th>
+          <th class="resource-header" colspan="4">Módulos</th>
+          <th class="resource-header" colspan="4">Usuarios</th>
+          <th class="resource-header" colspan="4">Roles</th>
+          <th class="resource-header" colspan="4">Settings</th>
+          <th class="resource-header" colspan="4">Logs</th>
+        </tr>
+        <tr>
+          <th></th>
+          <!-- Módulos -->
+          <th class="action-header"><span class="action-label">Crear</span></th>
+          <th class="action-header"><span class="action-label">Leer</span></th>
+          <th class="action-header"><span class="action-label">Editar</span></th>
+          <th class="action-header"><span class="action-label">Borrar</span></th>
+          <!-- Usuarios -->
+          <th class="action-header"><span class="action-label">Crear</span></th>
+          <th class="action-header"><span class="action-label">Leer</span></th>
+          <th class="action-header"><span class="action-label">Editar</span></th>
+          <th class="action-header"><span class="action-label">Borrar</span></th>
+          <!-- Roles -->
+          <th class="action-header"><span class="action-label">Crear</span></th>
+          <th class="action-header"><span class="action-label">Leer</span></th>
+          <th class="action-header"><span class="action-label">Editar</span></th>
+          <th class="action-header"><span class="action-label">Borrar</span></th>
+          <!-- Settings -->
+          <th class="action-header"><span class="action-label">Crear</span></th>
+          <th class="action-header"><span class="action-label">Leer</span></th>
+          <th class="action-header"><span class="action-label">Editar</span></th>
+          <th class="action-header"><span class="action-label">Borrar</span></th>
+          <!-- Logs -->
+          <th class="action-header"><span class="action-label">Crear</span></th>
+          <th class="action-header"><span class="action-label">Leer</span></th>
+          <th class="action-header"><span class="action-label">Editar</span></th>
+          <th class="action-header"><span class="action-label">Borrar</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let roleConfig of roles" [class]="'role-row-' + roleConfig.role.toLowerCase()">
+          <td class="role-cell">
+            <div class="role-badge" [ngClass]="roleConfig.role.toLowerCase()">
+              {{ roleConfig.role }}
+            </div>
+          </td>
+          <ng-container *ngFor="let perm of roleConfig.permissions">
+            <td 
+              class="permission-cell"
+              [ngClass]="getActionClass(perm.actions.create)"
+              (click)="togglePermission(roleConfig.role, perm.resource, 'create')"
+            >
+              <mat-icon>{{ getActionIcon(perm.actions.create) }}</mat-icon>
+            </td>
+            <td 
+              class="permission-cell"
+              [ngClass]="getActionClass(perm.actions.read)"
+              (click)="togglePermission(roleConfig.role, perm.resource, 'read')"
+            >
+              <mat-icon>{{ getActionIcon(perm.actions.read) }}</mat-icon>
+            </td>
+            <td 
+              class="permission-cell"
+              [ngClass]="getActionClass(perm.actions.update)"
+              (click)="togglePermission(roleConfig.role, perm.resource, 'update')"
+            >
+              <mat-icon>{{ getActionIcon(perm.actions.update) }}</mat-icon>
+            </td>
+            <td 
+              class="permission-cell"
+              [ngClass]="getActionClass(perm.actions.delete)"
+              (click)="togglePermission(roleConfig.role, perm.resource, 'delete')"
+            >
+              <mat-icon>{{ getActionIcon(perm.actions.delete) }}</mat-icon>
+            </td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    <h3>Leyenda</h3>
+    <div class="legend-items">
+      <div class="legend-item">
+        <strong>C</strong> = Create (Crear)
+      </div>
+      <div class="legend-item">
+        <strong>R</strong> = Read (Leer)
+      </div>
+      <div class="legend-item">
+        <strong>U</strong> = Update (Actualizar)
+      </div>
+      <div class="legend-item">
+        <strong>D</strong> = Delete (Eliminar)
+      </div>
+    </div>
+  </div>
+
+  <div class="role-descriptions">
+    <h3>Descripción de Roles</h3>
+    <div class="role-desc-grid">
+      <div class="role-desc owner">
+        <h4><mat-icon>admin_panel_settings</mat-icon> Owner</h4>
+        <p>Control total del sistema. Puede crear/modificar/eliminar módulos, gestionar todos los usuarios, configurar RBAC, y acceder a toda la configuración avanzada.</p>
+      </div>
+      <div class="role-desc admin">
+        <h4><mat-icon>security</mat-icon> Admin</h4>
+        <p>Gestión de usuarios y operaciones administrativas. Puede crear/modificar/eliminar usuarios, ver módulos y logs, modificar configuración básica. NO puede modificar módulos ni roles.</p>
+      </div>
+      <div class="role-desc user">
+        <h4><mat-icon>person</mat-icon> User</h4>
+        <p>Usuario estándar. Puede acceder a los módulos asignados según permisos. No tiene acceso administrativo.</p>
+      </div>
+      <div class="role-desc visor">
+        <h4><mat-icon>visibility</mat-icon> Visor</h4>
+        <p>Solo lectura. Puede ver módulos asignados pero sin permisos de modificación. Acceso mínimo solo para visualización.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button mat-raised-button color="primary" (click)="saveChanges()">
+      <mat-icon>save</mat-icon>
+      Guardar Configuración
+    </button>
+  </div>
+</div>

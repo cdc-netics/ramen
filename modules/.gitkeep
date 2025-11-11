@@ -1,0 +1,12 @@
+# Modules Directory
+
+This directory contains uploaded Node.js modules that are managed by the Module Manager.
+
+Each module gets its own isolated directory with:
+- Source files
+- package.json
+- node_modules (dependencies)
+- .env file (environment variables)
+
+Modules in this directory are ignored by git (see .gitignore).
+This file ensures the directory structure is maintained in the repository.

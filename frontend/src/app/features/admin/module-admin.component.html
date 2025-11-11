@@ -1,0 +1,472 @@
+<div class="module-admin-container">
+  <div class="header">
+    <h1>Gestión de Módulos</h1>
+    <button mat-raised-button color="primary" (click)="openForm()">
+      <mat-icon>add</mat-icon>
+      Agregar Módulo
+    </button>
+  </div>
+
+  <!-- Lista de módulos -->
+  <div class="modules-list">
+    <div class="module-card" *ngFor="let module of modules">
+      <div class="module-header">
+        <!-- Ícono del módulo - custom o default -->
+        <div class="module-icon-container">
+          <img 
+            *ngIf="module.icon" 
+            [src]="module.icon" 
+            class="module-custom-icon"
+            [alt]="module.name"
+          />
+          <mat-icon *ngIf="!module.icon" class="module-default-icon">
+            {{ module.moduleType === 'internal' ? 'code' : 'extension' }}
+          </mat-icon>
+        </div>
+        
+        <div class="module-info">
+          <div class="module-title-row">
+            <h3>{{ module.name }}</h3>
+            <span class="module-type-badge" [class.internal]="module.moduleType === 'internal'">
+              <mat-icon>{{ module.moduleType === 'internal' ? 'home_repair_service' : 'public' }}</mat-icon>
+              {{ module.moduleType === 'internal' ? 'Interno' : 'Externo' }}
+            </span>
+          </div>
+          <p>{{ module.description }}</p>
+        </div>
+        
+        <span class="module-status" [class.active]="module.status === 'active'">
+          {{ module.status }}
+        </span>
+      </div>
+
+      <div class="module-details">
+        <div class="detail-item">
+          <mat-icon>link</mat-icon>
+          <span>{{ module.baseUrl }}</span>
+        </div>
+        <div class="detail-item">
+          <mat-icon>web</mat-icon>
+          <span>{{ module.embedType }}</span>
+        </div>
+        <div class="detail-item" *ngIf="module.version">
+          <mat-icon>tag</mat-icon>
+          <span>v{{ module.version }}</span>
+        </div>
+        <div class="detail-item">
+          <mat-icon>group</mat-icon>
+          <span>{{ module.allowedRoles?.join(', ') || 'Todos' }}</span>
+        </div>
+      </div>
+
+      <div class="module-actions">
+        <button 
+          mat-mini-fab 
+          color="primary" 
+          (click)="openForm(module)"
+          matTooltip="Editar módulo"
+        >
+          <mat-icon>edit</mat-icon>
+        </button>
+        
+        <button 
+          mat-mini-fab 
+          color="accent" 
+          (click)="openCodeEditor(module)"
+          matTooltip="Editor de código"
+          *ngIf="module.moduleType === 'internal'"
+        >
+          <mat-icon>code</mat-icon>
+        </button>
+
+        <button 
+          mat-mini-fab 
+          color="primary"
+          (click)="openModuleConfig(module)"
+          matTooltip="Configurar plantillas y listas"
+        >
+          <mat-icon>tune</mat-icon>
+        </button>
+
+        <!-- NUEVOS BOTONES: Gestión de Módulos - AHORA VISIBLES PARA TODOS LOS MÓDULOS -->
+        <div class="module-lifecycle-actions">
+          <!-- Separador -->
+          <div class="action-separator"></div>
+
+          <!-- Validar -->
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="validateModule(module)"
+            matTooltip="Validar package.json"
+            [disabled]="isActionLoading(module._id, 'validate')"
+          >
+            <mat-icon>{{ isActionLoading(module._id, 'validate') ? 'hourglass_empty' : 'check_circle' }}</mat-icon>
+          </button>
+
+          <!-- Instalar dependencias -->
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="installDependencies(module)"
+            matTooltip="Instalar dependencias (npm install)"
+            [disabled]="isActionLoading(module._id, 'install')"
+          >
+            <mat-icon>{{ isActionLoading(module._id, 'install') ? 'hourglass_empty' : 'download' }}</mat-icon>
+          </button>
+
+          <!-- Estado y acciones del proceso -->
+          <ng-container *ngIf="getModuleStatus(module._id).status as status">
+            <!-- Iniciar (solo si no está corriendo) -->
+            <button 
+              mat-mini-fab 
+              style="background-color: #4caf50; color: white;"
+              (click)="startModule(module)"
+              matTooltip="Iniciar módulo"
+              *ngIf="status === 'not_running' || status === 'stopped' || status === 'unknown'"
+              [disabled]="isActionLoading(module._id, 'start')"
+            >
+              <mat-icon>{{ isActionLoading(module._id, 'start') ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+            </button>
+
+            <!-- Detener (solo si está corriendo) -->
+            <button 
+              mat-mini-fab 
+              style="background-color: #f44336; color: white;"
+              (click)="stopModule(module)"
+              matTooltip="Detener módulo"
+              *ngIf="status === 'running' || status === 'starting'"
+              [disabled]="isActionLoading(module._id, 'stop')"
+            >
+              <mat-icon>{{ isActionLoading(module._id, 'stop') ? 'hourglass_empty' : 'stop' }}</mat-icon>
+            </button>
+
+            <!-- Reiniciar (solo si está corriendo) -->
+            <button 
+              mat-mini-fab 
+              style="background-color: #ff9800; color: white;"
+              (click)="restartModule(module)"
+              matTooltip="Reiniciar módulo"
+              *ngIf="status === 'running'"
+              [disabled]="isActionLoading(module._id, 'restart')"
+            >
+              <mat-icon>{{ isActionLoading(module._id, 'restart') ? 'hourglass_empty' : 'refresh' }}</mat-icon>
+            </button>
+
+            <!-- Indicador de estado -->
+            <div class="status-indicator" [style.background-color]="getStatusColor(status)">
+              <mat-icon class="status-icon">
+                {{ status === 'running' ? 'check_circle' : status === 'error' ? 'error' : status === 'starting' ? 'pending' : 'radio_button_unchecked' }}
+              </mat-icon>
+              <span class="status-text">{{ status }}</span>
+              <span class="uptime-text" *ngIf="getModuleStatus(module._id).uptime">
+                {{ formatUptime(getModuleStatus(module._id).uptime) }}
+              </span>
+            </div>
+          </ng-container>
+
+          <!-- Info -->
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="showModuleInfo(module)"
+            matTooltip="Información del módulo"
+            [disabled]="isActionLoading(module._id, 'info')"
+          >
+            <mat-icon>{{ isActionLoading(module._id, 'info') ? 'hourglass_empty' : 'info' }}</mat-icon>
+          </button>
+
+          <!-- Logs -->
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            (click)="showModuleLogs(module)"
+            matTooltip="Ver logs del módulo"
+            [disabled]="isActionLoading(module._id, 'logs')"
+          >
+            <mat-icon>{{ isActionLoading(module._id, 'logs') ? 'hourglass_empty' : 'article' }}</mat-icon>
+          </button>
+        </div>
+        
+        <button 
+          mat-mini-fab 
+          color="warn" 
+          (click)="deleteModule(module)"
+          matTooltip="Eliminar módulo"
+        >
+          <mat-icon>delete_forever</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="modules.length === 0">
+      <mat-icon>inbox</mat-icon>
+      <p>No hay módulos configurados</p>
+      <button mat-raised-button color="primary" (click)="openForm()">
+        Crear Primer Módulo
+      </button>
+    </div>
+  </div>
+
+  <!-- Formulario lateral -->
+  <div class="module-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+  <div class="module-form" *ngIf="showForm">
+    <div class="form-header">
+      <h2>{{ editingModule ? 'Editar' : 'Nuevo' }} Módulo</h2>
+      <button mat-icon-button (click)="closeForm()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="form-content">
+      <div class="form-field">
+        <label>Nombre del Módulo *</label>
+        <input type="text" [(ngModel)]="newModule.name" placeholder="Ej: Bitácora, Hallazgos..." />
+      </div>
+
+      <div class="form-field">
+        <label>Ícono del Módulo</label>
+        <div class="icon-upload-zone">
+          <div class="icon-preview" *ngIf="newModule.icon">
+            <img [src]="newModule.icon" alt="Preview" />
+            <button mat-icon-button (click)="removeIcon()" class="remove-icon">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <div class="upload-area" *ngIf="!newModule.icon" (click)="iconInput.click()">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Click para subir ícono (PNG, SVG, JPG)</span>
+            <input 
+              #iconInput 
+              type="file" 
+              accept="image/*" 
+              (change)="onIconSelect($event)"
+              style="display: none"
+            />
+          </div>
+        </div>
+        <small>Tamaño recomendado: 128x128px. Formato: PNG, SVG o JPG</small>
+      </div>
+
+      <div class="form-field">
+        <label>Tipo de Módulo *</label>
+        <select [(ngModel)]="newModule.moduleType" (change)="onModuleTypeChange()">
+          <option *ngFor="let type of moduleTypes" [value]="type.value">{{ type.label }}</option>
+        </select>
+        <small>Interno = desarrollado por ti, Externo = third-party</small>
+      </div>
+
+      <!-- MÓDULOS INTERNOS -->
+      <div *ngIf="newModule.moduleType === 'internal'" class="internal-module-section">
+        <div class="editor-info-banner">
+          <mat-icon>info</mat-icon>
+          <div>
+            <strong>💻 Dos formas de agregar código</strong>
+            <p><strong>1. Upload de proyecto:</strong> Sube tu carpeta completa con todo el desarrollo (recomendado)</p>
+            <p><strong>2. Editor integrado:</strong> Escribe código directo en el navegador</p>
+          </div>
+        </div>
+
+        <!-- UPLOAD DE PROYECTO COMPLETO -->
+        <div class="upload-project-section">
+          <h4>
+            <mat-icon>folder</mat-icon>
+            Subir Proyecto Completo
+          </h4>
+          <p class="help-text">Sube la carpeta completa de tu desarrollo (Angular, React, Node.js, etc.)</p>
+          
+          <div class="project-upload-zone" (click)="projectFolderInput.click()">
+            <mat-icon>cloud_upload</mat-icon>
+            <div *ngIf="!uploadedFiles || uploadedFiles.length === 0">
+              <strong>Click para seleccionar carpeta del proyecto</strong>
+              <p>Se subirán todos los archivos (.js, .ts, .html, .css, .json, etc.)</p>
+            </div>
+            <div *ngIf="uploadedFiles && uploadedFiles.length > 0" class="upload-success">
+              <strong>✅ {{ uploadedFiles.length }} archivos listos para subir</strong>
+              <button mat-icon-button (click)="clearUploadedFiles($event)">
+                <mat-icon>clear</mat-icon>
+              </button>
+            </div>
+            <input 
+              #projectFolderInput 
+              type="file" 
+              webkitdirectory
+              directory
+              multiple
+              (change)="onProjectUpload($event)"
+              style="display: none"
+            />
+          </div>
+          
+          <div *ngIf="uploadedFiles && uploadedFiles.length > 0" class="uploaded-files-preview">
+            <p><strong>Archivos detectados:</strong></p>
+            <div class="file-list">
+              <div *ngFor="let file of uploadedFiles.slice(0, 10)" class="file-item">
+                <mat-icon>{{ getFileIcon(file.path) }}</mat-icon>
+                {{ file.path }}
+              </div>
+              <p *ngIf="uploadedFiles.length > 10" class="more-files">
+                ... y {{ uploadedFiles.length - 10 }} archivos más
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="separator">
+          <span>O</span>
+        </div>
+
+        <h3>
+          <mat-icon>code</mat-icon>
+          Configuración de Desarrollo
+        </h3>
+
+        <div class="form-field">
+          <label>Framework/Tecnología *</label>
+          <select [(ngModel)]="newModule.framework">
+            <option value="react">React</option>
+            <option value="angular">Angular</option>
+            <option value="vue">Vue.js</option>
+            <option value="vanilla">JavaScript Vanilla</option>
+            <option value="python-flask">Python Flask</option>
+            <option value="node-express">Node.js + Express</option>
+            <option value="custom">Custom/Otro</option>
+          </select>
+          <small>Selecciona el framework que usarás para desarrollar</small>
+        </div>
+
+        <div class="form-field">
+          <label>Puerto de Desarrollo *</label>
+          <input 
+            type="number" 
+            [(ngModel)]="newModule.devPort" 
+            placeholder="3001"
+            min="3000"
+            max="9999"
+          />
+          <small>Puerto donde correrá tu módulo en desarrollo (ej: 3001, 3002, etc)</small>
+        </div>
+
+        <div class="form-field">
+          <label>URL del Repositorio</label>
+          <input type="text" [(ngModel)]="newModule.repositoryUrl" placeholder="https://github.com/tu-org/tu-repo" />
+          <small>Para trazabilidad del código fuente</small>
+        </div>
+
+        <div class="form-field">
+          <label>Versión</label>
+          <input type="text" [(ngModel)]="newModule.version" placeholder="1.0.0" />
+          <small>Versión del módulo para control de cambios</small>
+        </div>
+
+        <div class="form-field">
+          <label>Base de Datos</label>
+          <select [(ngModel)]="newModule.database">
+            <option value="mongodb">MongoDB (Colección propia)</option>
+            <option value="postgres">PostgreSQL (Schema propio)</option>
+            <option value="mysql">MySQL (Database propia)</option>
+            <option value="none">Sin BD (Solo frontend)</option>
+          </select>
+          <small>Cada módulo tendrá su propia colección/schema aislada</small>
+        </div>
+
+        <div class="form-field" *ngIf="newModule.database !== 'none'">
+          <label>Nombre de la Colección/Schema *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="newModule.dbCollection" 
+            placeholder="bitacora_data"
+          />
+          <small>Nombre único para almacenar datos de este módulo (sin espacios)</small>
+        </div>
+
+        <div class="form-field">
+          <label>Dependencias NPM</label>
+          <textarea 
+            [(ngModel)]="newModule.dependencies" 
+            rows="3" 
+            placeholder="express@4.18.0&#10;mongoose@7.0.0&#10;axios@1.6.0"
+          ></textarea>
+          <small>Una dependencia por línea en formato: package@version</small>
+        </div>
+
+        <div class="form-field">
+          <label>Variables de Entorno</label>
+          <textarea 
+            [(ngModel)]="newModule.envVars" 
+            rows="3" 
+            placeholder="API_KEY=tu_api_key&#10;DB_NAME=mi_modulo_db&#10;PORT=3001"
+          ></textarea>
+          <small>Variables de entorno necesarias (formato KEY=value)</small>
+        </div>
+      </div>
+
+      <!-- MÓDULOS EXTERNOS -->
+      <div *ngIf="newModule.moduleType === 'external'" class="external-module-section">
+        <div class="form-field">
+          <label>URL Base *</label>
+          <input type="text" [(ngModel)]="newModule.baseUrl" placeholder="https://external-app.com" />
+          <small>URL completa del módulo externo</small>
+        </div>
+
+        <div class="form-field">
+          <label>Tipo de Integración *</label>
+          <select [(ngModel)]="newModule.embedType">
+            <option *ngFor="let type of embedTypes" [value]="type">{{ type }}</option>
+          </select>
+          <small>
+            iframe = embed directo, proxy = servidor redirige, link = abre nueva pestaña
+          </small>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>Descripción</label>
+        <textarea [(ngModel)]="newModule.description" rows="3" placeholder="Descripción del módulo..."></textarea>
+      </div>
+
+      <div class="form-field">
+        <label>Roles Permitidos</label>
+        <div class="roles-chips">
+          <div 
+            *ngFor="let role of allRoles" 
+            class="role-chip"
+            [class.selected]="newModule.allowedRoles.includes(role)"
+            (click)="toggleRole(role)"
+          >
+            {{ role }}
+          </div>
+        </div>
+        <small>Si no seleccionas ninguno, estará disponible para todos</small>
+      </div>
+
+      <div class="form-field">
+        <label>Estado</label>
+        <select [(ngModel)]="newModule.status">
+          <option value="active">Activo</option>
+          <option value="inactive">Inactivo</option>
+          <option value="maintenance">Mantenimiento</option>
+          <option value="development">En Desarrollo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <button mat-button (click)="closeForm()">Cancelar</button>
+      <button mat-raised-button color="primary" (click)="saveModule()">
+        <mat-icon>save</mat-icon>
+        Guardar
+      </button>
+      <button 
+        mat-raised-button 
+        color="accent" 
+        (click)="saveAndOpenEditor()"
+        *ngIf="newModule.moduleType === 'internal'"
+        style="margin-left: 10px;"
+      >
+        <mat-icon>code</mat-icon>
+        Guardar e Ir al Editor
+      </button>
+    </div>
+  </div>
+</div>

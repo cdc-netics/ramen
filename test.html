@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Ramen Backend</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .test { background: white; padding: 20px; margin: 10px 0; border-radius: 5px; }
+        .success { border-left: 4px solid green; }
+        .error { border-left: 4px solid red; }
+        button { background: #00AEEF; color: white; border: none; padding: 10px 20px; cursor: pointer; margin: 5px; }
+        pre { background: #f0f0f0; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🍜 Test Ramen Backend</h1>
+    
+    <div class="test">
+        <h3>Backend URL:</h3>
+        <p id="backend-url">http://localhost:3001</p>
+    </div>
+
+    <button onclick="testHealth()">1. Test Health</button>
+    <button onclick="testLogin()">2. Test Login</button>
+    <button onclick="testModules()">3. Test Modules</button>
+
+    <div id="results"></div>
+
+    <script>
+        const API = 'http://localhost:3001';
+        
+        function log(title, success, data) {
+            const div = document.createElement('div');
+            div.className = 'test ' + (success ? 'success' : 'error');
+            div.innerHTML = `
+                <h3>${success ? '✅' : '❌'} ${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            document.getElementById('results').appendChild(div);
+        }
+
+        async function testHealth() {
+            document.getElementById('results').innerHTML = '';
+            try {
+                const response = await fetch(API + '/api/health');
+                const data = await response.json();
+                log('Health Check', response.ok, data);
+            } catch (error) {
+                log('Health Check', false, { error: error.message });
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch(API + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'owner',
+                        password: 'admin123'
+                    })
+                });
+                const data = await response.json();
+                log('Login (owner/admin123)', response.ok, data);
+                
+                if (response.ok && data.token) {
+                    window.token = data.token;
+                }
+            } catch (error) {
+                log('Login', false, { error: error.message });
+            }
+        }
+
+        async function testModules() {
+            try {
+                const headers = {};
+                if (window.token) {
+                    headers['Authorization'] = 'Bearer ' + window.token;
+                }
+                
+                const response = await fetch(API + '/api/modules', { headers });
+                const data = await response.json();
+                log('Get Modules', response.ok, data);
+            } catch (error) {
+                log('Get Modules', false, { error: error.message });
+            }
+        }
+
+        // Test automático al cargar
+        window.onload = async () => {
+            await testHealth();
+            await new Promise(r => setTimeout(r, 500));
+            await testLogin();
+            await new Promise(r => setTimeout(r, 500));
+            await testModules();
+        };
+    </script>
+</body>
+</html>

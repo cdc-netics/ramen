@@ -1,0 +1,383 @@
+<div class="module-config-container">
+  <!-- Header -->
+  <div class="header">
+    <button class="btn-back" (click)="goBack()">
+      ← Volver
+    </button>
+    <h1>⚙️ Configuración: {{ config?.moduleName || moduleId }}</h1>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando configuración...</p>
+  </div>
+
+  <!-- Content -->
+  <div *ngIf="!isLoading && !config" class="empty-state global">
+    <p>No encontramos configuración para <strong>{{ moduleId }}</strong>.</p>
+    <p>Verifica que el módulo exista y tenga plantillas registradas.</p>
+  </div>
+
+  <div *ngIf="!isLoading && config" class="config-content">
+    
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'templates'"
+        (click)="activeTab = 'templates'">
+        📋 Plantillas ({{ templates.length }})
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'lists'"
+        (click)="activeTab = 'lists'">
+        📝 Listas
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'policies'"
+        (click)="activeTab = 'policies'">
+        📜 Políticas ({{ policies.length }})
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'slas'"
+        (click)="activeTab = 'slas'">
+        ⏱️ SLAs
+      </button>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TAB: PLANTILLAS -->
+    <!-- ============================================ -->
+    <div *ngIf="activeTab === 'templates'" class="tab-content">
+      <div class="templates-layout">
+        
+        <!-- Lista de plantillas -->
+        <div class="templates-list">
+          <div class="list-header">
+            <h3>Plantillas</h3>
+            <button class="btn-primary" (click)="createNewTemplate()">
+              + Nueva Plantilla
+            </button>
+          </div>
+          
+          <div class="template-item" 
+               *ngFor="let template of templates"
+               [class.active]="selectedTemplate?._id === template._id"
+               (click)="selectTemplate(template)">
+            <div class="template-info">
+              <strong>{{ template.name }}</strong>
+              <small>{{ template.category }} • {{ template.fields.length }} campos</small>
+            </div>
+            <div class="template-badges">
+              <span class="badge-locked" *ngIf="getAdminOnlyFields(template).length > 0">
+                🔒 {{ getAdminOnlyFields(template).length }}
+              </span>
+            </div>
+          </div>
+          
+          <div *ngIf="templates.length === 0" class="empty-state">
+            No hay plantillas configuradas
+          </div>
+        </div>
+
+        <!-- Detalle/Editor de plantilla -->
+        <div class="template-detail">
+          
+          <!-- Modo: Ver -->
+          <div *ngIf="editMode === 'view' && selectedTemplate" class="view-mode">
+            <div class="detail-header">
+              <div>
+                <h2>{{ selectedTemplate.name }}</h2>
+                <p class="description">{{ selectedTemplate.description }}</p>
+              </div>
+              <div class="actions">
+                <button class="btn-secondary" (click)="editTemplate(selectedTemplate)">
+                  ✏️ Editar
+                </button>
+                <button class="btn-danger" (click)="deleteTemplate(selectedTemplate)">
+                  🗑️ Eliminar
+                </button>
+              </div>
+            </div>
+
+            <div class="fields-section">
+              <h3>Campos Editables ({{ getEditableFields(selectedTemplate).length }})</h3>
+              <div class="field-card" *ngFor="let field of getEditableFields(selectedTemplate)">
+                <div class="field-header">
+                  <strong>{{ field.label }}</strong>
+                  <span class="field-type">{{ getFieldTypeLabel(field.type) }}</span>
+                </div>
+                <div class="field-meta">
+                  <span class="badge-success" *ngIf="field.required">Obligatorio</span>
+                  <span class="field-id">ID: {{ field.id }}</span>
+                </div>
+                <p *ngIf="field.hint" class="field-hint">💡 {{ field.hint }}</p>
+              </div>
+            </div>
+
+            <div class="fields-section locked" *ngIf="getAdminOnlyFields(selectedTemplate).length > 0">
+              <h3>🔒 Campos Bloqueados - Solo Admin ({{ getAdminOnlyFields(selectedTemplate).length }})</h3>
+              <div class="field-card locked" *ngFor="let field of getAdminOnlyFields(selectedTemplate)">
+                <div class="field-header">
+                  <strong>{{ field.label }}</strong>
+                  <span class="field-type">{{ getFieldTypeLabel(field.type) }}</span>
+                </div>
+                <div class="field-meta">
+                  <span class="badge-locked">🔒 AdminOnly</span>
+                  <span class="field-id">ID: {{ field.id }}</span>
+                </div>
+                <div class="default-value" *ngIf="field.defaultValue">
+                  <strong>Valor por defecto:</strong> {{ field.defaultValue }}
+                </div>
+                <p *ngIf="field.hint" class="field-hint">💡 {{ field.hint }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modo: Crear/Editar -->
+          <div *ngIf="editMode !== 'view' && editingTemplate" class="edit-mode">
+            <div class="detail-header">
+              <h2>{{ editMode === 'create' ? '➕ Nueva Plantilla' : '✏️ Editar Plantilla' }}</h2>
+              <div class="actions">
+                <button class="btn-secondary" (click)="cancelEdit()">Cancelar</button>
+                <button class="btn-primary" (click)="saveTemplate()">💾 Guardar</button>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="form-group">
+                <label>Nombre de la Plantilla *</label>
+                <input type="text" [(ngModel)]="editingTemplate.name" placeholder="ej: Reporte de Incidente">
+              </div>
+
+              <div class="form-group">
+                <label>Descripción</label>
+                <textarea [(ngModel)]="editingTemplate.description" 
+                          placeholder="Describe para qué se usa esta plantilla"
+                          rows="2"></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Categoría</label>
+                <select [(ngModel)]="editingTemplate.category">
+                  <option value="general">General</option>
+                  <option value="incident">Incidente</option>
+                  <option value="security">Seguridad</option>
+                  <option value="audit">Auditoría</option>
+                  <option value="maintenance">Mantenimiento</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fields-editor">
+              <div class="editor-header">
+                <h3>Campos de la Plantilla</h3>
+                <button class="btn-primary" (click)="addField()">+ Agregar Campo</button>
+              </div>
+
+              <div class="field-editor" *ngFor="let field of editingTemplate.fields; let i = index">
+                <div class="field-editor-header">
+                  <span class="field-number">Campo #{{ i + 1 }}</span>
+                  <div class="field-actions">
+                    <button class="btn-icon" (click)="moveFieldUp(i)" [disabled]="i === 0">↑</button>
+                    <button class="btn-icon" (click)="moveFieldDown(i)" [disabled]="i === editingTemplate.fields!.length - 1">↓</button>
+                    <button class="btn-icon danger" (click)="removeField(i)">🗑️</button>
+                  </div>
+                </div>
+
+                <div class="field-editor-grid">
+                  <div class="form-group">
+                    <label>ID del Campo *</label>
+                    <input type="text" [(ngModel)]="field.id" placeholder="ej: incident_date">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Etiqueta *</label>
+                    <input type="text" [(ngModel)]="field.label" placeholder="ej: Fecha del Incidente">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Tipo *</label>
+                    <select [(ngModel)]="field.type">
+                      <option *ngFor="let ft of fieldTypes" [value]="ft.value">{{ ft.label }}</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Valor por Defecto</label>
+                    <input type="text" [(ngModel)]="field.defaultValue" placeholder="Opcional">
+                  </div>
+
+                  <div class="form-group">
+                    <label>Placeholder</label>
+                    <input type="text" [(ngModel)]="field.placeholder" placeholder="Texto de ayuda">
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>Hint (ayuda contextual)</label>
+                    <input type="text" [(ngModel)]="field.hint" placeholder="Información adicional para el usuario">
+                  </div>
+
+                  <div class="form-group checkboxes">
+                    <label>
+                      <input type="checkbox" [(ngModel)]="field.required">
+                      Obligatorio
+                    </label>
+                    <label>
+                      <input type="checkbox" [(ngModel)]="field.editable">
+                      Editable
+                    </label>
+                    <label class="admin-only-toggle">
+                      <input type="checkbox" 
+                             [checked]="field.adminOnly"
+                             (change)="toggleAdminOnly(field)">
+                      🔒 Solo Admin (bloqueado para analistas)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="!editingTemplate.fields || editingTemplate.fields.length === 0" class="empty-state">
+                No hay campos. Haz clic en "+ Agregar Campo" para comenzar.
+              </div>
+            </div>
+          </div>
+
+          <!-- Estado vacío -->
+          <div *ngIf="editMode === 'view' && !selectedTemplate" class="empty-state">
+            <p>Selecciona una plantilla de la lista o crea una nueva</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TAB: LISTAS -->
+    <!-- ============================================ -->
+    <div *ngIf="activeTab === 'lists'" class="tab-content">
+      <div class="lists-layout">
+        <div class="lists-sidebar">
+          <h3>Listas Configurables</h3>
+          <button class="list-selector" 
+                  *ngFor="let listName of availableLists"
+                  [class.active]="selectedList === listName"
+                  (click)="loadList(listName)">
+            {{ listName }}
+          </button>
+        </div>
+
+        <div class="list-editor" *ngIf="selectedList">
+          <div class="editor-header">
+            <h3>📝 {{ selectedList }}</h3>
+            <div class="actions">
+              <button class="btn-primary" (click)="addListItem()">+ Agregar Item</button>
+              <button class="btn-success" (click)="saveList()">💾 Guardar Lista</button>
+            </div>
+          </div>
+
+          <div class="list-items">
+            <div class="list-item" *ngFor="let item of editingList; let i = index">
+              <div class="item-fields">
+                <input type="text" [(ngModel)]="item.value" placeholder="Valor (ID)">
+                <input type="text" [(ngModel)]="item.label" placeholder="Etiqueta">
+                <input type="text" [(ngModel)]="item.description" placeholder="Descripción (opcional)">
+                <input type="text" [(ngModel)]="item.color" placeholder="Color (opcional)">
+              </div>
+              <button class="btn-icon danger" (click)="removeListItem(i)">🗑️</button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!selectedList" class="empty-state">
+          Selecciona una lista para editar
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TAB: POLÍTICAS -->
+    <!-- ============================================ -->
+    <div *ngIf="activeTab === 'policies'" class="tab-content">
+      <div class="policies-layout">
+        <div class="list-header">
+          <h3>Políticas y Procedimientos</h3>
+          <button class="btn-primary" (click)="createNewPolicy()">+ Agregar Política</button>
+        </div>
+
+        <div class="policy-card" *ngFor="let policy of policies">
+          <h4>{{ policy.title }} <span class="version">v{{ policy.version }}</span></h4>
+          <p>{{ policy.description }}</p>
+          <a [href]="policy.url" target="_blank" class="policy-link">📄 Ver documento</a>
+          <small>Última actualización: {{ policy.lastUpdated | date }}</small>
+        </div>
+
+        <div *ngIf="editingPolicy" class="policy-editor">
+          <h3>➕ Nueva Política</h3>
+          <div class="form-group">
+            <label>Título *</label>
+            <input type="text" [(ngModel)]="editingPolicy.title" placeholder="ej: Respuesta a Incidentes">
+          </div>
+          <div class="form-group">
+            <label>Descripción *</label>
+            <textarea [(ngModel)]="editingPolicy.description" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>URL del Documento *</label>
+            <input type="text" [(ngModel)]="editingPolicy.url" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Versión</label>
+            <input type="text" [(ngModel)]="editingPolicy.version" placeholder="1.0">
+          </div>
+          <div class="actions">
+            <button class="btn-secondary" (click)="cancelPolicyEdit()">Cancelar</button>
+            <button class="btn-success" (click)="savePolicy()">💾 Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- TAB: SLAs -->
+    <!-- ============================================ -->
+    <div *ngIf="activeTab === 'slas'" class="tab-content">
+      <div class="slas-layout">
+        <div class="list-header">
+          <h3>⏱️ Service Level Agreements (SLAs)</h3>
+          <button class="btn-primary" *ngIf="!editingSLAs" (click)="editSLAs()">✏️ Editar</button>
+          <div *ngIf="editingSLAs" class="actions">
+            <button class="btn-secondary" (click)="cancelSLAsEdit()">Cancelar</button>
+            <button class="btn-success" (click)="saveSLAs()">💾 Guardar</button>
+          </div>
+        </div>
+
+        <div class="sla-section">
+          <h4>⏱️ Tiempos de Respuesta</h4>
+          <div class="sla-item" *ngFor="let key of objectKeys(slas.responseTime || {})">
+            <label>{{ key }}:</label>
+            <input type="text" 
+                   [(ngModel)]="slas.responseTime![key]" 
+                   [disabled]="!editingSLAs"
+                   placeholder="ej: 4 horas">
+          </div>
+        </div>
+
+        <div class="sla-section">
+          <h4>⏲️ Tiempos de Resolución</h4>
+          <div class="sla-item" *ngFor="let key of objectKeys(slas.resolutionTime || {})">
+            <label>{{ key }}:</label>
+            <input type="text" 
+                   [(ngModel)]="slas.resolutionTime![key]" 
+                   [disabled]="!editingSLAs"
+                   placeholder="ej: 2 días">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

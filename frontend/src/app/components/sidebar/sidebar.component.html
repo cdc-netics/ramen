@@ -1,0 +1,51 @@
+<aside class="sidebar mat-elevation-z4" [class.closed]="!open">
+  <div class="top">
+    <button mat-icon-button (click)="toggle()" class="toggle-btn">
+      <mat-icon>{{ open ? 'menu_open' : 'menu' }}</mat-icon>
+    </button>
+    
+    <!-- Logo y título personalizables -->
+    <div *ngIf="open" class="branding-section">
+      <img 
+        *ngIf="brandingLogo" 
+        [src]="brandingLogo" 
+        [alt]="brandingName" 
+        class="sidebar-logo"
+      />
+      <span class="title">{{ brandingName }}</span>
+    </div>
+  </div>
+
+  <div class="user-info" *ngIf="open">
+    <mat-icon class="user-icon">account_circle</mat-icon>
+    <div class="user-details">
+      <span class="username">{{ username }}</span>
+      <span class="role">{{ primaryRole }}</span>
+    </div>
+  </div>
+
+  <nav>
+    <!-- Admin Panel Link - solo para Owner/Admin -->
+    <a 
+      *ngIf="isOwnerOrAdmin()" 
+      routerLink="/admin" 
+      routerLinkActive="active"
+      class="admin-link"
+    >
+      <mat-icon>admin_panel_settings</mat-icon>
+      <span *ngIf="open">Admin Panel</span>
+    </a>
+
+    <a *ngFor="let m of filteredModules" [routerLink]="['/modules', m._id]" routerLinkActive="active">
+      <mat-icon>{{ m.icon || 'security' }}</mat-icon>
+      <span *ngIf="open">{{m.name}}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button mat-button (click)="logout()" class="logout-btn">
+      <mat-icon>logout</mat-icon>
+      <span *ngIf="open">Cerrar Sesión</span>
+    </button>
+  </div>
+</aside>

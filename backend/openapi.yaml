@@ -1,0 +1,43 @@
+openapi: 3.0.1
+info:
+  title: Ramen Orquestador API
+  version: 0.1.0
+paths:
+  /api/auth/login:
+    post:
+      summary: Login local
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/modules:
+    get:
+      summary: List modules
+      responses:
+        '200':
+          description: list
+    post:
+      summary: Register module
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Module'
+components:
+  schemas:
+    Module:
+      type: object
+      properties:
+        name: { type: string }
+        baseUrl: { type: string }
+        embedType: { type: string }
+        allowedRoles:
+          type: array
+          items: { type: string }

@@ -1,0 +1,214 @@
+<div class="branding-container">
+  <div class="header">
+    <h1>🎨 Personalización de Marca</h1>
+    <p class="subtitle">Configura el logo, nombre y colores de tu orquestador (Solo Owner)</p>
+  </div>
+
+  <div class="branding-form">
+    <!-- Nombre de la aplicación -->
+    <div class="form-section">
+      <h2>
+        <mat-icon>title</mat-icon>
+        Nombre de la Aplicación
+      </h2>
+      <div class="form-field">
+        <label>Nombre *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="branding.appName" 
+          placeholder="Ramen SOC"
+          maxlength="50"
+        />
+        <small>Este nombre aparecerá en el sidebar y login</small>
+      </div>
+    </div>
+
+    <!-- Logo del Sidebar -->
+    <div class="form-section">
+      <h2>
+        <mat-icon>image</mat-icon>
+        Logo del Sidebar
+      </h2>
+      
+      <div class="logo-options">
+        <div class="option-group">
+          <label>Opción 1: Subir imagen (PNG, JPG, JPEG, GIF, SVG, WEBP, AVIF)</label>
+          <div class="upload-zone" (click)="logoFileInput.click()">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Click para subir logo</span>
+            <input 
+              #logoFileInput 
+              type="file" 
+              accept="image/*" 
+              (change)="onLogoFileSelect($event, 'logo')"
+              style="display: none"
+            />
+          </div>
+        </div>
+
+        <div class="separator">O</div>
+
+        <div class="option-group">
+          <label>Opción 2: URL de imagen</label>
+          <input 
+            type="text" 
+            [(ngModel)]="branding.logoUrl" 
+            (ngModelChange)="onLogoUrlChange('logo')"
+            placeholder="https://ejemplo.com/logo.png"
+          />
+        </div>
+      </div>
+
+      <div class="logo-preview" *ngIf="previewLogo && branding.logoUrl">
+        <label>Vista previa:</label>
+        <div class="preview-box">
+          <img [src]="branding.logoUrl" alt="Logo preview" />
+          <button mat-icon-button (click)="removeLogo('logo')" class="remove-btn">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <small *ngIf="branding.logoUrl.endsWith('.gif')">✅ GIF animado detectado</small>
+      </div>
+    </div>
+
+    <!-- Logo del Login -->
+    <div class="form-section">
+      <h2>
+        <mat-icon>login</mat-icon>
+        Logo del Login
+      </h2>
+      
+      <div class="logo-options">
+        <div class="option-group">
+          <label>Opción 1: Subir imagen (PNG, JPG, JPEG, GIF, SVG, WEBP, AVIF)</label>
+          <div class="upload-zone" (click)="loginLogoFileInput.click()">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Click para subir logo de login</span>
+            <input 
+              #loginLogoFileInput 
+              type="file" 
+              accept="image/*" 
+              (change)="onLogoFileSelect($event, 'loginLogo')"
+              style="display: none"
+            />
+          </div>
+        </div>
+
+        <div class="separator">O</div>
+
+        <div class="option-group">
+          <label>Opción 2: URL de imagen</label>
+          <input 
+            type="text" 
+            [(ngModel)]="branding.loginLogoUrl" 
+            (ngModelChange)="onLogoUrlChange('loginLogo')"
+            placeholder="https://ejemplo.com/login-logo.gif"
+          />
+        </div>
+      </div>
+
+      <div class="logo-preview" *ngIf="previewLoginLogo && branding.loginLogoUrl">
+        <label>Vista previa:</label>
+        <div class="preview-box">
+          <img [src]="branding.loginLogoUrl" alt="Login logo preview" />
+          <button mat-icon-button (click)="removeLogo('loginLogo')" class="remove-btn">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <small *ngIf="branding.loginLogoUrl.endsWith('.gif')">✅ GIF animado detectado</small>
+      </div>
+    </div>
+
+    <!-- Animación de Loading -->
+    <div class="form-section">
+      <h2>
+        <mat-icon>animation</mat-icon>
+        Animación de Carga (Después del Login)
+      </h2>
+      
+      <div class="logo-options">
+        <div class="option-group">
+          <label>Opción 1: Subir imagen/GIF animado (PNG, JPG, JPEG, GIF, SVG, WEBP, AVIF)</label>
+          <div class="upload-zone" (click)="loadingAnimFileInput.click()">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Click para subir animación</span>
+            <input 
+              #loadingAnimFileInput 
+              type="file" 
+              accept="image/*" 
+              (change)="onLogoFileSelect($event, 'loadingAnimation')"
+              style="display: none"
+            />
+          </div>
+        </div>
+
+        <div class="separator">O</div>
+
+        <div class="option-group">
+          <label>Opción 2: URL de imagen/GIF</label>
+          <input 
+            type="text" 
+            [(ngModel)]="branding.loadingAnimationUrl" 
+            (ngModelChange)="onLogoUrlChange('loadingAnimation')"
+            placeholder="https://ejemplo.com/ramen-loading.gif"
+          />
+        </div>
+      </div>
+
+      <div class="logo-preview" *ngIf="previewLoadingAnimation && branding.loadingAnimationUrl">
+        <label>Vista previa:</label>
+        <div class="preview-box">
+          <img [src]="branding.loadingAnimationUrl" alt="Loading animation preview" />
+          <button mat-icon-button (click)="removeLogo('loadingAnimation')" class="remove-btn">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <small *ngIf="branding.loadingAnimationUrl.endsWith('.gif')">✅ GIF animado detectado</small>
+      </div>
+
+      <small class="help-text">
+        💡 Recomendación: Usa un GIF de ramen anime bien bonito y a colores con fondo blanco semitransparente
+      </small>
+    </div>
+
+    <!-- Colores (Opcional) -->
+    <div class="form-section">
+      <h2>
+        <mat-icon>palette</mat-icon>
+        Colores Personalizados (Opcional)
+      </h2>
+      
+      <div class="color-pickers">
+        <div class="color-field">
+          <label>Color Primario</label>
+          <input type="color" [(ngModel)]="branding.primaryColor" />
+          <span>{{ branding.primaryColor }}</span>
+        </div>
+
+        <div class="color-field">
+          <label>Color Secundario</label>
+          <input type="color" [(ngModel)]="branding.secondaryColor" />
+          <span>{{ branding.secondaryColor }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje -->
+    <div class="message-box" *ngIf="message" [class.success]="message.startsWith('✅')" [class.error]="message.startsWith('❌')">
+      {{ message }}
+    </div>
+
+    <!-- Botones -->
+    <div class="form-actions">
+      <button mat-button (click)="resetToDefault()">
+        <mat-icon>restore</mat-icon>
+        Restaurar por Defecto
+      </button>
+
+      <button mat-raised-button color="primary" (click)="saveBranding()" [disabled]="saving">
+        <mat-icon>{{ saving ? 'hourglass_empty' : 'save' }}</mat-icon>
+        {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+      </button>
+    </div>
+  </div>
+</div>

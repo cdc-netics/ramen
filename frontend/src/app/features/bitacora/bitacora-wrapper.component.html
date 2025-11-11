@@ -1,0 +1,77 @@
+<div class="module-wrapper">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <mat-spinner></mat-spinner>
+    <p>Generando token SSO...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-state">
+    <mat-icon color="warn">error</mat-icon>
+    <h3>Error al cargar módulo</h3>
+    <p>{{ error }}</p>
+    <button mat-raised-button color="primary" (click)="ngOnInit()">
+      <mat-icon>refresh</mat-icon>
+      Reintentar
+    </button>
+  </div>
+
+  <!-- iframe (solo si no hay error ni está cargando) -->
+  <iframe 
+    *ngIf="!loading && !error && iframeUrl && embedType === 'iframe'"
+    [src]="iframeUrl" 
+    style="width:100%;height:100vh;border:0"
+  ></iframe>
+
+  <!-- Mensaje para link externo -->
+  <div *ngIf="!loading && !error && embedType === 'link'" class="link-message">
+    <mat-icon>open_in_new</mat-icon>
+    <h3>Módulo abierto en nueva pestaña</h3>
+    <p>Si no se abrió automáticamente, haz click en el botón:</p>
+    <button mat-raised-button color="primary" (click)="ngOnInit()">
+      <mat-icon>open_in_new</mat-icon>
+      Abrir Módulo
+    </button>
+  </div>
+</div>
+
+<style>
+.module-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.loading-state, .error-state, .link-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.loading-state p, .error-state p, .link-message p {
+  color: #6b7280;
+  text-align: center;
+}
+
+.error-state h3, .link-message h3 {
+  margin: 0;
+  font-weight: 500;
+}
+
+.error-state mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+}
+
+.link-message mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #667eea;
+}
+</style>

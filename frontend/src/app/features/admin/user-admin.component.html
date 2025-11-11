@@ -1,0 +1,246 @@
+<div class="user-admin-container">
+  <div class="header">
+    <h1>Gestión de Usuarios</h1>
+    <button mat-raised-button color="primary" (click)="openForm()">
+      <mat-icon>person_add</mat-icon>
+      Crear Usuario
+    </button>
+  </div>
+
+  <!-- Tabla de usuarios -->
+  <div class="users-table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre Completo</th>
+          <th>Email</th>
+          <th>Roles</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>
+            <div class="user-cell">
+              <div class="user-avatar">
+                {{ user.username.charAt(0).toUpperCase() }}
+              </div>
+              <span>{{ user.username }}</span>
+            </div>
+          </td>
+          <td>{{ user.fullName }}</td>
+          <td>{{ user.email || '—' }}</td>
+          <td>
+            <div class="roles-badges">
+              <span 
+                *ngFor="let role of user.roles" 
+                class="role-badge"
+                [ngClass]="getRoleBadgeClass(role)"
+              >
+                {{ role }}
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [class.active]="user.status === 'active'">
+              {{ user.status || 'active' }}
+            </span>
+          </td>
+          <td>
+            <div class="actions">
+              <button 
+                mat-icon-button 
+                matTooltip="Editar" 
+                (click)="openForm(user)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                matTooltip="Cambiar contraseña" 
+                (click)="openPasswordDialog(user)"
+              >
+                <mat-icon>lock</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                [matTooltip]="user.status === 'blocked' ? 'Desbloquear' : 'Bloquear'"
+                (click)="toggleUserBlock(user)"
+                [disabled]="user.username === 'owner'"
+              >
+                <mat-icon>{{ user.status === 'blocked' ? 'lock_open' : 'block' }}</mat-icon>
+              </button>
+              <button 
+                mat-icon-button 
+                color="warn" 
+                matTooltip="Eliminar"
+                (click)="deleteUser(user)"
+                [disabled]="user.username === 'owner'"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="empty-state" *ngIf="users.length === 0">
+      <mat-icon>people_outline</mat-icon>
+      <p>No hay usuarios registrados</p>
+      <button mat-raised-button color="primary" (click)="openForm()">
+        Crear Primer Usuario
+      </button>
+    </div>
+  </div>
+
+  <!-- Formulario lateral -->
+  <div class="user-form-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+  <div class="user-form" *ngIf="showForm">
+    <div class="form-header">
+      <h2>{{ editingUser ? 'Editar' : 'Nuevo' }} Usuario</h2>
+      <button mat-icon-button (click)="closeForm()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="form-content">
+      <div class="form-field">
+        <label>Username *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="newUser.username" 
+          placeholder="Ej: jperez" 
+          [disabled]="editingUser"
+        />
+        <small *ngIf="editingUser">El username no se puede modificar</small>
+      </div>
+
+      <div class="form-field">
+        <label>Nombre Completo *</label>
+        <input type="text" [(ngModel)]="newUser.fullName" placeholder="Juan Pérez" />
+      </div>
+
+      <div class="form-field">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="newUser.email" placeholder="juan.perez@example.com" />
+      </div>
+
+      <div class="form-field">
+        <label>Contraseña {{ editingUser ? '(dejar vacío para mantener)' : '*' }}</label>
+        <input 
+          type="password" 
+          [(ngModel)]="newUser.password" 
+          placeholder="••••••••" 
+        />
+      </div>
+
+      <div class="form-field">
+        <label>Roles *</label>
+        <div class="roles-chips">
+          <div 
+            *ngFor="let role of allRoles" 
+            class="role-chip"
+            [class.selected]="newUser.roles.includes(role)"
+            [ngClass]="getRoleBadgeClass(role)"
+            (click)="toggleRole(role)"
+          >
+            <mat-icon>{{ newUser.roles.includes(role) ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
+            {{ role }}
+          </div>
+        </div>
+        <small>Selecciona uno o más roles para el usuario</small>
+      </div>
+
+      <div class="form-field">
+        <label>Estado</label>
+        <select [(ngModel)]="newUser.status">
+          <option value="active">Activo</option>
+          <option value="inactive">Inactivo</option>
+          <option value="suspended">Suspendido</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <button mat-button (click)="closeForm()">Cancelar</button>
+      <button mat-raised-button color="primary" (click)="saveUser()">
+        Guardar
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Cambio de Contraseña -->
+  <div class="password-modal-overlay" *ngIf="showPasswordDialog" (click)="closePasswordDialog()"></div>
+  <div class="password-modal" *ngIf="showPasswordDialog">
+    <div class="modal-header">
+      <h2>Cambiar Contraseña</h2>
+      <button mat-icon-button (click)="closePasswordDialog()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="modal-content">
+      <p class="user-info">
+        <mat-icon>person</mat-icon>
+        <strong>{{ passwordUser?.username }}</strong> - {{ passwordUser?.fullName }}
+      </p>
+
+      <div class="form-field" *ngIf="isChangingOwnPassword()">
+        <label>Contraseña Actual *</label>
+        <input 
+          type="password" 
+          [(ngModel)]="passwordData.currentPassword" 
+          placeholder="Tu contraseña actual"
+          (keyup.enter)="changePassword()"
+        />
+      </div>
+
+      <div class="form-field">
+        <label>Nueva Contraseña *</label>
+        <input 
+          type="password" 
+          [(ngModel)]="passwordData.newPassword" 
+          placeholder="Mínimo 6 caracteres"
+          (keyup.enter)="changePassword()"
+        />
+      </div>
+
+      <div class="form-field">
+        <label>Confirmar Contraseña *</label>
+        <input 
+          type="password" 
+          [(ngModel)]="passwordData.confirmPassword" 
+          placeholder="Repite la nueva contraseña"
+          (keyup.enter)="changePassword()"
+        />
+      </div>
+
+      <div class="password-strength" *ngIf="passwordData.newPassword">
+        <div class="strength-bar" [class]="getPasswordStrength()">
+          <div class="strength-fill"></div>
+        </div>
+        <small>{{ getPasswordStrengthLabel() }}</small>
+      </div>
+
+      <div class="alert alert-error" *ngIf="passwordError">
+        <mat-icon>error</mat-icon>
+        {{ passwordError }}
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button mat-button (click)="closePasswordDialog()">Cancelar</button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="changePassword()"
+        [disabled]="!isPasswordValid()"
+      >
+        Cambiar Contraseña
+      </button>
+    </div>
+  </div>
+</div>

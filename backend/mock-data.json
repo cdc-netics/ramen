@@ -1,0 +1,57 @@
+{
+  "users": [
+    {
+      "username": "owner",
+      "fullName": "Owner",
+      "passwordHash": "$2a$10$d7uj0C2pms13uCUSwiKt8eD2cxbJaGPPvOgaGjvw3pzAhQN.kyE3y",
+      "roles": [
+        "Owner",
+        "Admin"
+      ],
+      "_id": "1762444427833ofsqpbyx3",
+      "createdAt": "2025-11-06T15:53:47.833Z"
+    }
+  ],
+  "modules": [
+    {
+      "name": "Bitacora (React)",
+      "baseUrl": "http://localhost:3001",
+      "embedType": "iframe",
+      "allowedRoles": [
+        "User",
+        "Admin",
+        "Owner"
+      ],
+      "description": "Bitacora React en Docker (ejemplo)",
+      "status": "online",
+      "_id": "1762444427838ngdxm48fv",
+      "createdAt": "2025-11-06T15:53:47.838Z"
+    },
+    {
+      "name": "LeakedPasswords",
+      "baseUrl": "/app/leaked",
+      "embedType": "proxy",
+      "allowedRoles": [
+        "Admin",
+        "Owner"
+      ],
+      "description": "DB de contraseñas filtradas",
+      "_id": "1762444427840l9xbp3v7x",
+      "createdAt": "2025-11-06T15:53:47.840Z"
+    },
+    {
+      "name": "Hallazgos",
+      "baseUrl": "/app/hallazgos",
+      "embedType": "proxy",
+      "allowedRoles": [
+        "Admin",
+        "Owner"
+      ],
+      "description": "Módulo de hallazgos",
+      "_id": "17624444278414a9nqho00",
+      "createdAt": "2025-11-06T15:53:47.841Z"
+    }
+  ],
+  "leakedPasswords": [],
+  "findings": []
+}
