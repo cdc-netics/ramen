@@ -2278,7 +2278,7 @@ cd backend
 
 ### � Última actualización: 11 de Noviembre, 2025
 
-**Estado general:** ✅ **BACKEND COMPLETADO Y TESTEADO** | ⚠️ Frontend creado, pendiente integración
+**Estado general:** ✅ **BACKEND COMPLETADO Y TESTEADO** | ✅ Frontend integrado en el panel admin
 
 ### Backend (100% Funcional)
 
@@ -2328,35 +2328,30 @@ cd backend
 
 ### Frontend (Componentes Creados)
 
-#### ✅ Fase 5: Servicio Angular (COMPLETADO)
+#### ✅ Fase 5: Servicio Angular (COMPLETADO E INTEGRADO)
 - **Archivo:** `frontend/src/app/core/services/module-config.service.ts` (380 líneas)
-- **Estado:** Código completo, pendiente integración
+- **Estado:** Injectable registrado y usado por el componente admin
 - **Métodos:** 25+ métodos con interfaces TypeScript
 - **Helpers:** isAdmin(), getEditableFields(), getReadOnlyFields()
 
-#### ✅ Fase 6: Componente de Admin (COMPLETADO)
+#### ✅ Fase 6: Componente de Admin (COMPLETADO E INTEGRADO)
 - **Archivos:**
   - `module-config.component.ts` (370 líneas)
   - `module-config.component.html` (530 líneas)
   - `module-config.component.scss` (750 líneas)
-- **Estado:** Código completo, pendiente integración
+- **Estado:** Declarado en `AppModule` y expuesto en `/admin/module-config/:moduleId`
 - **Características:**
   - 4 pestañas: Templates, Listas, Políticas, SLAs
   - Editor de campos con reordenamiento
   - Toggle adminOnly para bloquear campos
   - CRUD completo con validación
 
-### Pendiente de Integración
-
-#### ⏳ Fase 7: Integración Angular
-- [ ] Registrar componente en `app.module.ts`
-- [ ] Agregar ruta en `app-routing.module.ts`
-- [ ] Importar HttpClientModule
-- [ ] Importar FormsModule
-- [ ] Agregar botón "⚙️ Configurar" en panel admin
-- [ ] Testing end-to-end
-
-**Tiempo estimado:** 30 minutos
+### Integración Angular (Checklist ✅)
+- [x] Declarado en `app.module.ts` y FormsModule ya presente.
+- [x] Ruta protegida `admin/module-config/:moduleId` (RbacGuard con roles Owner/Admin).
+- [x] Botón `⚙️ Configurar` en `ModuleAdminComponent` que abre la ruta correcta (usa `_id`, `moduleId` o `configModuleId`).
+- [x] Servicio reutiliza `environment.apiUrl` y token almacenado en `localStorage`.
+- [x] Probado contra `simple-server.js` con el módulo `bitacora-soc`.
 
 ---
 

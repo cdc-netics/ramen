@@ -74,21 +74,24 @@ Docs: actualizar README con nuevos endpoints
 
 ## 🧪 Testing
 
-Antes de hacer un PR:
+Antes de abrir un PR verifica como mínimo lo siguiente:
 
-1. **Ejecutar tests** existentes: `npm test`
-2. **Agregar tests** para nueva funcionalidad
-3. **Verificar** que el código funciona localmente
+1. **Backend**  
+   - Ejecuta los scripts de pruebas automatizadas (requieren PowerShell / pwsh):
+     ```bash
+     pwsh ./backend/test-api.ps1
+     pwsh ./backend/test-module-config.ps1
+     pwsh ./backend/test-zip-validation.ps1
+     ```
+   - Levanta el backend demo para validar manualmente (`node simple-server.js`) u opcionalmente `npm start` si trabajas con Mongo (`server.js`).
 
-```bash
-# Backend
-cd backend
-npm test
+2. **Frontend**  
+   - Ejecuta `npm run test` (alias de `ng test`) en `frontend/`.
+   - Corre `npm start` y navega el panel admin para validar los flujos impactados.
 
-# Frontend
-cd frontend
-npm test
-```
+3. **Documentación y scripts**  
+   - Si tocaste endpoints o procesos, actualiza los documentos relevantes (README, TECHNICAL_REFERENCE, CONFIGURACION_MODULOS, README_FRONTEND, etc.).
+   - Asegúrate de que los scripts `.ps1` / `.sh` sigan funcionando con los cambios.
 
 ## 📚 Documentación
 

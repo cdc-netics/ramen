@@ -78,6 +78,18 @@ getModules(): Observable<Module[]>
 getModuleById(id: string): Observable<Module>
 ```
 
+### ModuleConfigService
+```typescript
+// Configuración dinámica (plantillas, listas, SLAs)
+getModuleConfig(moduleId: string): Observable<ModuleConfig>
+getTemplates(moduleId: string): Observable<{ templates: Template[] }>
+createTemplate(moduleId: string, template: Partial<Template>): Observable<Template>
+updateList(moduleId: string, listName: string, items: ListItem[]): Observable<{ items: ListItem[] }>
+updateSLAs(moduleId: string, slas: SLAs): Observable<{ slas: SLAs }>
+```
+
+Usa `environment.apiUrl` + `/module-config` y adjunta el token JWT en el header `Authorization`.
+
 ## Guards
 
 ### RbacGuard
@@ -86,10 +98,21 @@ Protege rutas según roles del usuario. Se aplica en `app-routing.module.ts`:
 ```typescript
 {
   path: 'admin',
-  component: AdminComponent,
   canActivate: [RbacGuard],
-  data: { requiredRoles: ['Owner', 'Admin'] }
-}
+  data: { allowedRoles: ['Owner', 'Admin'] },
+  children: [
+    { path: '', component: DashboardComponent },
+    { path: 'modules', component: ModuleAdminComponent, data: { allowedRoles: ['Owner'] } },
+    { path: 'modules/:id/code', component: CodeEditorComponent, data: { allowedRoles: ['Owner'] } },
+    { path: 'users', component: UserAdminComponent },
+    { path: 'rbac', component: RbacConfigComponent, data: { allowedRoles: ['Owner'] } },
+    { path: 'module-access', component: ModuleUserAccessComponent, data: { allowedRoles: ['Owner', 'Admin'] } },
+    { path: 'module-config/:moduleId', component: ModuleConfigComponent, data: { allowedRoles: ['Owner', 'Admin'] } },
+    { path: 'logs', component: LogsComponent },
+    { path: 'branding', component: BrandingSettingsComponent, data: { allowedRoles: ['Owner'] } }
+  ]
+},
+{ path: 'modules', loadChildren: () => import('./features/modules-shell.module').then(m => m.ModulesShellModule), canActivate: [RbacGuard] }
 ```
 
 ## Componentes Clave
@@ -104,6 +127,12 @@ Protege rutas según roles del usuario. Se aplica en `app-routing.module.ts`:
 - Renderiza módulos tipo `iframe` con DomSanitizer
 - Abre módulos tipo `link` en nueva pestaña
 - Maneja módulos tipo `proxy` internos
+
+### ModuleConfigComponent
+- Ruta: `/admin/module-config/:moduleId`
+- Solo Owner/Admin.
+- CRUD de plantillas (campos editables vs `adminOnly`), listas, políticas y SLAs usando `ModuleConfigService`.
+- Utiliza tabs (`templates`, `lists`, `policies`, `slas`) y actualiza dinámicamente las listas disponibles por módulo.
 
 ### AdminComponent
 Tabs de administración:

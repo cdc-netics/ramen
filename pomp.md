@@ -179,9 +179,9 @@ ramen/
 - [x] **Sistema de configuración de módulos** (backend)
 - [x] **15 API endpoints de configuración**
 - [x] **Tests automatizados (21 tests totales)**
+- [x] **Integración Angular del configurador de módulos** (`ModuleConfigComponent`)
 
 ### En Progreso ⚠️
-- [ ] Integración Angular de componentes de configuración
 - [ ] Form builder dinámico usando templates
 - [ ] Workflow de estados
 
@@ -202,7 +202,7 @@ ramen/
 - Tests: 21 tests (9 generales + 12 configuración)
 
 **Frontend:**
-- Framework: Angular 17+
+- Framework: Angular 16.2
 - UI: Material Design / Custom SCSS
 - Estado: RxJS
 - Guards: RBAC implementado

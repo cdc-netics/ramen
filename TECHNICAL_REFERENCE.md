@@ -24,45 +24,45 @@
 ## Stack Tecnológico
 
 ### Backend
-```javascript
-// Versiones exactas en package.json
+```jsonc
+// Versiones exactas en backend/package.json
 {
-  "express": "^4.18.2",        // Servidor HTTP
-  "jsonwebtoken": "^9.0.2",    // JWT para autenticación
-  "bcryptjs": "^2.4.3",        // Hash de contraseñas
-  "multer": "^1.4.5-lts.1",    // Upload de archivos
-  "cors": "^2.8.5",            // CORS
-  "http-proxy-middleware": "^2.0.6",  // Proxy reverso
-  "mongoose": "^8.0.0",        // ODM para MongoDB (opcional)
-  "aws-sdk": "^2.1691.0",      // S3 (opcional)
-  "@azure/storage-blob": "^12.24.0"   // Azure Blob (opcional)
+  "express": "^4.18.2",              // API REST
+  "helmet": "^6.0.0",                // Security headers
+  "cors": "^2.8.5",                  // CORS policy
+  "jsonwebtoken": "^9.0.0",          // JWT auth
+  "bcryptjs": "^2.4.3",              // Password hashing
+  "http-proxy-middleware": "^2.0.9", // Reverse proxy / iframe fix
+  "multer": "^1.4.5-lts.1",          // File uploads
+  "mongoose": "^7.0.0"               // ODM (opcional, usado por server.js)
 }
 ```
 
-**Características:**
-- Node.js 18+
-- ES6+ con require (CommonJS)
-- Express middleware pattern
-- In-memory database para demo
-- MongoDB opcional para producción
+**Notas clave:**
+- Node.js 18+ obligatorio (aprovecha la versión LTS para crypto/stream).
+- `simple-server.js` funciona 100 % in-memory (sin Mongo) y expone storage + module manager.
+- `server.js` conecta a MongoDB usando las mismas rutas (`/api/module-config`, `/api/modules`, etc.).
+- PowerShell scripts (`test-*.ps1`) cubren API, module-config y validación ZIP.
 
 ### Frontend
-```json
+```jsonc
+// Versiones exactas en frontend/package.json
 {
-  "@angular/core": "^17.0.0",
-  "@angular/router": "^17.0.0",
-  "@angular/forms": "^17.0.0",
-  "rxjs": "^7.8.0",
-  "typescript": "^5.2.0"
+  "@angular/core": "^16.2.0",
+  "@angular/material": "^16.2.0",
+  "@angular/cdk": "^16.2.0",
+  "rxjs": "~7.8.0",
+  "animejs": "^3.2.1",
+  "jwt-decode": "^4.0.0",
+  "typescript": "~5.1.3"
 }
 ```
 
-**Características:**
-- Angular 17+ (standalone components compatible)
-- TypeScript strict mode
-- RxJS para programación reactiva
-- SCSS para estilos
-- Guards para protección de rutas
+**Notas clave:**
+- Angular 16.2 con módulos tradicionales (`AppModule`) y guards basados en `RbacGuard`.
+- Angular Material para botones, iconos y tooltips en el panel admin.
+- `ModuleConfigService` consume los endpoints `/api/module-config/**` desde `environment.apiUrl`.
+- Anime.js se usa para animaciones (dashboard y formularios deslizables).
 
 ---
 

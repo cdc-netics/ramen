@@ -125,7 +125,7 @@ Ver [README.md](README.md) para instrucciones detalladas.
 
 ```bash
 # Quick start
-cd backend && npm install && npm start
+cd backend && npm install && node simple-server.js   # demo sin Mongo
 cd frontend && npm install && npm start
 ```
 
