@@ -343,7 +343,7 @@ export class ModuleConfigService {
    * Valida si el usuario tiene permisos de Admin
    */
   isAdmin(): boolean {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('ramen_token');
     if (!token) return false;
 
     try {
