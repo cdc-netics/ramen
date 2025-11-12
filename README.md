@@ -44,66 +44,57 @@
 
 ## 🚀 Inicio Rápido
 
-> **Requisitos**: Node.js 18+ y npm 9+
+> **Requisitos**: Node.js 18+
 
-### Opción 1: Inicio Automático (Recomendado)
+### Inicio Simple (1 comando)
+
+El frontend ya está pre-compilado. Solo necesitas iniciar el backend:
 
 #### Windows
 ```bash
-# Doble clic en INICIAR.bat o ejecuta:
-.\INICIAR.bat
+# Opción 1: Doble clic en start.bat
 
-# O con PowerShell (más robusto):
-.\INICIAR.ps1
+# Opción 2: PowerShell
+.\start.ps1
+
+# Opción 3: Directo
+cd backend
+npm install
+node simple-server.js
 ```
-
-El script automáticamente:
-- ✅ Verifica e instala dependencias del backend y frontend
-- ✅ Detiene procesos anteriores en los puertos 4000 y 4200
-- ✅ Inicia el backend en `http://localhost:4000`
-- ✅ Inicia el frontend en `http://localhost:4200`
-- ✅ Espera a que Angular compile
-- ✅ Abre el navegador automáticamente
 
 #### Linux/Mac
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-### Opción 2: Inicio Manual
-
-#### 1. Backend (modo demo)
-
 ```bash
 cd backend
 npm install
 node simple-server.js
 ```
 
-- Expone la API, storage y proxy en `http://localhost:4000`
-- Base de datos en memoria (sin MongoDB)
-- Credenciales demo: `owner / admin123`
-- Storage local en `C:\ramen-storage` (configurable)
+**Eso es todo.** El servidor inicia en **3-5 segundos** y sirve:
+- 🌐 Frontend (Angular) en: `http://localhost:4000`
+- 📡 API REST en: `http://localhost:4000/api/*`
 
-#### 2. Frontend (Angular)
+### 🔑 Acceso
+
+Abre `http://localhost:4000` y usa:
+- Usuario: `owner`
+- Password: `admin123`
+
+### ⚙️ Opciones Avanzadas
+
+#### Recompilar el frontend (solo si modificas código Angular)
 
 ```bash
 cd frontend
 npm install
-npm start        # Inicia en http://localhost:4200
+npm run build
 ```
 
-Espera 30-60 segundos para que Angular compile. Cuando veas:
-```
-✔ Compiled successfully
-```
+El build genera `frontend/dist/ramen-frontend/` que el backend sirve automáticamente.
 
-Abre `http://localhost:4200` en tu navegador.
+#### Backend con MongoDB (Producción)
 
-### Opción 3: Backend con MongoDB (Producción)
-
-Para persistencia real:
+Para persistencia real en lugar de memoria:
 
 ```bash
 cd backend
@@ -118,25 +109,9 @@ $env:MONGO_URI="mongodb://localhost:27017/ramen"
 node server.js
 ```
 
-### 🔑 Credenciales de Acceso
+> **⚠️ IMPORTANTE**: Cambia las credenciales `owner/admin123` en producción desde el panel de administración.
 
-| Rol   | Usuario | Contraseña |
-|-------|---------|------------|
-|Owner/Admin|`owner`|`admin123`|
-
-> **⚠️ IMPORTANTE**: Cambia estas credenciales en producción desde el panel de administración.
-
-### 🔍 Verificación
-
-Confirma que los servicios están corriendo:
-
-```bash
-# Backend
-curl http://localhost:4000/api/health
-
-# Frontend
-curl http://localhost:4200
-```
+---
 
 ---
 
