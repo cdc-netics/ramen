@@ -49,6 +49,10 @@
           <mat-icon>web</mat-icon>
           <span>{{ module.embedType }}</span>
         </div>
+        <div class="detail-item" *ngIf="module.useProxy">
+          <mat-icon>shield</mat-icon>
+          <span>Proxy activo → {{ module.proxyTarget || module.baseUrl }}</span>
+        </div>
         <div class="detail-item" *ngIf="module.version">
           <mat-icon>tag</mat-icon>
           <span>v{{ module.version }}</span>
@@ -117,37 +121,37 @@
 
           <!-- Estado y acciones del proceso -->
           <ng-container *ngIf="getModuleStatus(module._id).status as status">
-            <!-- Iniciar (solo si no está corriendo) -->
+            <!-- Iniciar (solo si no está corriendo y NO es externo) -->
             <button 
               mat-mini-fab 
               style="background-color: #4caf50; color: white;"
               (click)="startModule(module)"
               matTooltip="Iniciar módulo"
-              *ngIf="status === 'not_running' || status === 'stopped' || status === 'unknown'"
+              *ngIf="(status === 'not_running' || status === 'stopped' || status === 'unknown') && module.moduleType !== 'external'"
               [disabled]="isActionLoading(module._id, 'start')"
             >
               <mat-icon>{{ isActionLoading(module._id, 'start') ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
             </button>
 
-            <!-- Detener (solo si está corriendo) -->
+            <!-- Detener (solo si está corriendo y NO es externo) -->
             <button 
               mat-mini-fab 
               style="background-color: #f44336; color: white;"
               (click)="stopModule(module)"
               matTooltip="Detener módulo"
-              *ngIf="status === 'running' || status === 'starting'"
+              *ngIf="(status === 'running' || status === 'starting') && module.moduleType !== 'external'"
               [disabled]="isActionLoading(module._id, 'stop')"
             >
               <mat-icon>{{ isActionLoading(module._id, 'stop') ? 'hourglass_empty' : 'stop' }}</mat-icon>
             </button>
 
-            <!-- Reiniciar (solo si está corriendo) -->
+            <!-- Reiniciar (solo si está corriendo y NO es externo) -->
             <button 
               mat-mini-fab 
               style="background-color: #ff9800; color: white;"
               (click)="restartModule(module)"
               matTooltip="Reiniciar módulo"
-              *ngIf="status === 'running'"
+              *ngIf="status === 'running' && module.moduleType !== 'external'"
               [disabled]="isActionLoading(module._id, 'restart')"
             >
               <mat-icon>{{ isActionLoading(module._id, 'restart') ? 'hourglass_empty' : 'refresh' }}</mat-icon>
@@ -156,9 +160,9 @@
             <!-- Indicador de estado -->
             <div class="status-indicator" [style.background-color]="getStatusColor(status)">
               <mat-icon class="status-icon">
-                {{ status === 'running' ? 'check_circle' : status === 'error' ? 'error' : status === 'starting' ? 'pending' : 'radio_button_unchecked' }}
+                {{ status === 'running' || status === 'external' ? 'check_circle' : status === 'error' ? 'error' : status === 'starting' ? 'pending' : 'radio_button_unchecked' }}
               </mat-icon>
-              <span class="status-text">{{ status }}</span>
+              <span class="status-text">{{ status === 'external' ? 'ONLINE' : status.toUpperCase() }}</span>
               <span class="uptime-text" *ngIf="getModuleStatus(module._id).uptime">
                 {{ formatUptime(getModuleStatus(module._id).uptime) }}
               </span>
@@ -417,6 +421,23 @@
           <small>
             iframe = embed directo, proxy = servidor redirige, link = abre nueva pestaña
           </small>
+        </div>
+
+        <div class="form-field">
+          <label class="checkbox-field">
+            <input type="checkbox" [(ngModel)]="newModule.useProxy" />
+            Usar proxy inverso para este módulo
+          </label>
+          <small>
+            Activa esta opción si el sistema externo bloquea iframes con <code>X-Frame-Options</code>
+            o <code>frame-ancestors</code>. Ramen expondrá el módulo en <code>/proxy/&lt;moduleId&gt;</code>.
+          </small>
+        </div>
+
+        <div class="form-field" *ngIf="newModule.useProxy">
+          <label>Destino real del proxy *</label>
+          <input type="text" [(ngModel)]="newModule.proxyTarget" placeholder="http://10.0.100.13:8477" />
+          <small>URL original del sistema externo (se mantendrá privada y sólo la consumirá el proxy)</small>
         </div>
       </div>
 

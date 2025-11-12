@@ -22,6 +22,8 @@ export class ModuleAdminComponent implements OnInit {
     icon: '',
     baseUrl: 'http://localhost:3001',
     embedType: 'iframe',
+    useProxy: false,
+    proxyTarget: '',
     moduleType: 'internal', // Por defecto INTERNO para desarrollo
     // Campos para módulos internos
     framework: 'react',
@@ -84,6 +86,8 @@ export class ModuleAdminComponent implements OnInit {
         icon: module.icon || '',
         baseUrl: module.baseUrl || '',
         embedType: module.embedType || 'iframe',
+        useProxy: !!module.useProxy,
+        proxyTarget: module.proxyTarget || '',
         moduleType: module.moduleType || 'external',
         framework: module.framework || 'react',
         devPort: module.devPort || 3001,
@@ -104,6 +108,8 @@ export class ModuleAdminComponent implements OnInit {
         icon: '',
         baseUrl: 'http://localhost:3001',
         embedType: 'iframe',
+        useProxy: false,
+        proxyTarget: '',
         moduleType: 'internal', // Por defecto INTERNO
         framework: 'react',
         devPort: 3001,
@@ -141,6 +147,7 @@ export class ModuleAdminComponent implements OnInit {
       complete: () => {
         this.showForm = false;
         this.editingModule = null;
+        this.selectedIconFile = null;
       }
     });
   }
@@ -156,12 +163,28 @@ export class ModuleAdminComponent implements OnInit {
 
   async saveModule() {
     try {
+      let savedModule: any;
+      
+      // Guardar el ícono temporalmente y quitarlo del objeto para no enviar base64
+      const tempIcon = this.newModule.icon;
+      if (this.selectedIconFile) {
+        delete this.newModule.icon; // No enviar base64 en el PUT
+      }
+      
       if (this.editingModule) {
         // Update existing
-        await this.http.put(`http://localhost:4000/api/modules/${this.editingModule._id}`, this.newModule).toPromise();
+        savedModule = await this.http.put(`http://localhost:4000/api/modules/${this.editingModule._id}`, this.newModule).toPromise();
+        savedModule = { ...this.editingModule, ...savedModule };
       } else {
         // Create new
-        await this.http.post('http://localhost:4000/api/modules', this.newModule).toPromise();
+        savedModule = await this.http.post('http://localhost:4000/api/modules', this.newModule).toPromise();
+      }
+      
+      // Si hay un ícono seleccionado, subirlo por separado
+      if (this.selectedIconFile) {
+        await this.uploadIcon(savedModule._id);
+      } else {
+        this.newModule.icon = tempIcon; // Restaurar si no había archivo nuevo
       }
       
       await this.loadModules();
@@ -230,6 +253,8 @@ export class ModuleAdminComponent implements OnInit {
     this.router.navigate(['/admin/module-config', targetId]);
   }
 
+  selectedIconFile: File | null = null;
+
   onIconSelect(event: any) {
     const file = event.target.files[0];
     if (!file) return;
@@ -246,16 +271,45 @@ export class ModuleAdminComponent implements OnInit {
       return;
     }
 
-    // Convertir a base64
+    // Guardar el archivo para subirlo después
+    this.selectedIconFile = file;
+
+    // Mostrar preview
     const reader = new FileReader();
     reader.onload = (e: any) => {
-      this.newModule.icon = e.target.result;
+      this.newModule.icon = e.target.result; // Solo para preview
     };
     reader.readAsDataURL(file);
   }
 
+  async uploadIcon(moduleId: string) {
+    if (!this.selectedIconFile) return;
+
+    const formData = new FormData();
+    formData.append('icon', this.selectedIconFile);
+
+    try {
+      const result: any = await this.http.post(
+        `http://localhost:4000/api/modules/${moduleId}/icon`,
+        formData
+      ).toPromise();
+      
+      console.log('Ícono subido exitosamente:', result.iconUrl);
+      
+      // Actualizar el módulo en la lista con la nueva URL del ícono
+      const moduleIndex = this.modules.findIndex(m => m._id === moduleId);
+      if (moduleIndex !== -1) {
+        this.modules[moduleIndex].icon = result.iconUrl;
+      }
+    } catch (err) {
+      console.error('Error subiendo ícono:', err);
+      alert('Error al subir el ícono');
+    }
+  }
+
   removeIcon() {
     this.newModule.icon = '';
+    this.selectedIconFile = null;
   }
 
   onModuleTypeChange() {
@@ -263,6 +317,8 @@ export class ModuleAdminComponent implements OnInit {
     if (this.newModule.moduleType === 'internal') {
       this.newModule.baseUrl = `http://localhost:${this.newModule.devPort}`;
       this.newModule.embedType = 'iframe';
+      this.newModule.useProxy = false;
+      this.newModule.proxyTarget = '';
     } else {
       this.newModule.baseUrl = '';
     }
@@ -391,6 +447,7 @@ export class ModuleAdminComponent implements OnInit {
   getStatusColor(status: string): string {
     const colors: any = {
       'running': 'green',
+      'external': 'blue', // Módulos externos (proxy activo)
       'starting': 'orange',
       'stopping': 'orange',
       'stopped': 'gray',
@@ -485,13 +542,20 @@ export class ModuleAdminComponent implements OnInit {
       }).toPromise();
       
       if (result.success) {
-        alert(`✅ Módulo iniciado\n\nPuerto: ${result.port}\nPID: ${result.pid}\nEstado: ${result.status}`);
         await this.updateModuleStatuses();
+        
+        // Esperar 2 segundos y mostrar logs
+        setTimeout(async () => {
+          await this.showModuleLogs(module);
+        }, 2000);
+        
+        alert(`✅ Módulo iniciado\n\nTipo: ${result.type}\nPuerto: ${result.port || 'N/A'}\nPID: ${result.pid || 'N/A'}\nEstado: ${result.status}\n\n💡 Se abrirán los logs en 2 segundos...`);
       } else {
         alert(`❌ Error: ${result.error}`);
       }
     } catch (err: any) {
-      alert(`❌ Error al iniciar módulo:\n${err.error?.error || err.message}`);
+      const errorMsg = err.error?.error || err.message || 'Error desconocido';
+      alert(`❌ Error al iniciar módulo:\n\n${errorMsg}\n\n💡 Revisa los logs del backend en la consola del servidor`);
     } finally {
       this.loadingActions.delete(module._id);
     }
@@ -585,37 +649,50 @@ export class ModuleAdminComponent implements OnInit {
     this.loadingActions.set(module._id, 'logs');
     
     try {
-      const status = await this.http.get<any>(`http://localhost:4000/api/modules/${module._id}/status`).toPromise();
-      
-      if (status.status === 'not_running') {
-        alert(`⚠️ El módulo no está corriendo`);
-        return;
-      }
-
-      const stdoutLogs = status.recentLogs?.stdout || [];
-      const stderrLogs = status.recentLogs?.stderr || [];
+      const logsResponse = await this.http.get<any>(`http://localhost:4000/api/modules/${module._id}/logs?limit=100`).toPromise();
       
       let msg = `📋 Logs del Módulo: ${module.name}\n\n`;
-      msg += `Estado: ${status.status}\n`;
-      msg += `Puerto: ${status.port}\n`;
-      msg += `PID: ${status.pid}\n`;
-      msg += `Uptime: ${this.formatUptime(status.uptime)}\n`;
-      msg += `Reintentos: ${status.restarts}\n\n`;
       
-      if (stdoutLogs.length > 0) {
-        msg += `=== STDOUT (últimos ${stdoutLogs.length}) ===\n`;
-        stdoutLogs.forEach((log: any) => {
+      // Si es un módulo externo con proxy
+      if (logsResponse.moduleType === 'external' && logsResponse.logs?.proxy) {
+        msg += `Tipo: Módulo Externo (iframe con proxy)\n`;
+        msg += `Estado: ${logsResponse.status}\n`;
+        msg += `Total de peticiones: ${logsResponse.logs.total}\n\n`;
+        
+        msg += `=== LOGS DEL PROXY (últimas ${logsResponse.logs.proxy.length} peticiones) ===\n`;
+        logsResponse.logs.proxy.forEach((log: any) => {
           const time = new Date(log.timestamp).toLocaleTimeString();
-          msg += `[${time}] ${log.message}\n`;
+          const icon = log.type === 'error' ? '❌' : log.type === 'response' ? '✅' : '📤';
+          msg += `${icon} [${time}] ${log.message}\n`;
         });
-      }
-      
-      if (stderrLogs.length > 0) {
-        msg += `\n=== STDERR (últimos ${stderrLogs.length}) ===\n`;
-        stderrLogs.forEach((log: any) => {
-          const time = new Date(log.timestamp).toLocaleTimeString();
-          msg += `[${time}] ${log.message}\n`;
-        });
+      } 
+      // Módulo interno
+      else if (logsResponse.status === 'not_running') {
+        alert(`⚠️ El módulo no está corriendo`);
+        return;
+      } else {
+        const stdoutLogs = logsResponse.logs?.stdout || [];
+        const stderrLogs = logsResponse.logs?.stderr || [];
+        
+        msg += `Estado: ${logsResponse.status}\n`;
+        msg += `Puerto: ${logsResponse.port}\n`;
+        msg += `Uptime: ${this.formatUptime(logsResponse.uptime)}\n\n`;
+        
+        if (stdoutLogs.length > 0) {
+          msg += `=== STDOUT (últimos ${stdoutLogs.length}) ===\n`;
+          stdoutLogs.forEach((log: any) => {
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            msg += `[${time}] ${log.message}\n`;
+          });
+        }
+        
+        if (stderrLogs.length > 0) {
+          msg += `\n=== STDERR (últimos ${stderrLogs.length}) ===\n`;
+          stderrLogs.forEach((log: any) => {
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            msg += `[${time}] ${log.message}\n`;
+          });
+        }
       }
       
       alert(msg);

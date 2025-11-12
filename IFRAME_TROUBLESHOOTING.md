@@ -1,5 +1,9 @@
 # ⚠️ PROBLEMA CRÍTICO: Módulos Externos en Iframe
 
+> ℹ️ **Actualización:** ahora `simple-server.js` expone un proxy inverso dinámico en  
+> `/proxy/:moduleId` que elimina `X-Frame-Options`/`frame-ancestors` por módulo.  
+> Los ejemplos históricos con `/proxy-bitacora` se mantienen para contexto.
+
 ## 🔴 Por Qué NO Funcionó el Módulo "Bitácora SOC"
 
 ### Causa Raíz Identificada

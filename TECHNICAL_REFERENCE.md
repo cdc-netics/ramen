@@ -105,7 +105,7 @@
 │  │  /api/findings       → Gestión de hallazgos                │  │
 │  │  /api/storage        → Upload/Download archivos            │  │
 │  │  /api/module-config  → Configuración módulos (NUEVO)       │  │
-│  │  /proxy-bitacora     → Proxy reverso para iframes          │  │
+│  │  /proxy/:moduleId    → Proxy reverso dinámico para iframes │  │
 │  └───────────┬───────────────────────────────────────────────┘  │
 │              │                                                    │
 │  ┌───────────▼───────────────────────────────────────────────┐  │
@@ -163,10 +163,12 @@ const database = {
   ],
   modules: [
     {
-      _id: '1',
+      _id: 'bitacora-soc',
       name: 'Bitácora SOC',
-      baseUrl: 'http://localhost:4000/proxy-bitacora',
+      baseUrl: 'http://10.0.100.13:8477',
       embedType: 'iframe',
+      useProxy: true,
+      proxyTarget: 'http://10.0.100.13:8477',
       allowedRoles: ['Owner', 'Admin'],
       description: 'Sistema de bitácora SOC externo',
       status: 'online',

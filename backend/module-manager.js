@@ -18,12 +18,48 @@ class ModuleManager {
   constructor(modulesBaseDir) {
     this.modulesBaseDir = modulesBaseDir || path.join(__dirname, '../modules');
     this.runningModules = new Map(); // moduleId -> { process, port, status, restarts }
+    this.proxyLogs = new Map(); // moduleId -> { logs: [], maxSize: 500 } para módulos externos
     
     // Crear directorio base si no existe
     if (!fs.existsSync(this.modulesBaseDir)) {
       fs.mkdirSync(this.modulesBaseDir, { recursive: true });
       console.log('📂 Created modules directory:', this.modulesBaseDir);
     }
+  }
+
+  /**
+   * Agrega un log de proxy para módulos externos
+   */
+  addProxyLog(moduleId, type, message) {
+    if (!this.proxyLogs.has(moduleId)) {
+      this.proxyLogs.set(moduleId, { logs: [], maxSize: 500 });
+    }
+    
+    const logEntry = {
+      timestamp: new Date().toISOString(),
+      type, // 'request', 'response', 'error'
+      message
+    };
+    
+    const logs = this.proxyLogs.get(moduleId);
+    logs.logs.push(logEntry);
+    
+    // Mantener solo los últimos N logs
+    if (logs.logs.length > logs.maxSize) {
+      logs.logs.shift();
+    }
+  }
+
+  /**
+   * Obtiene los logs de proxy de un módulo externo
+   */
+  getProxyLogs(moduleId, limit = 100) {
+    if (!this.proxyLogs.has(moduleId)) {
+      return [];
+    }
+    
+    const logs = this.proxyLogs.get(moduleId).logs;
+    return logs.slice(-limit);
   }
 
   /**
@@ -168,21 +204,71 @@ class ModuleManager {
    * @param {Object} config - Configuración { port, dbCollection, entryPoint, envVars }
    */
   async startModule(moduleId, config) {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`🚀 INICIANDO MÓDULO: ${moduleId}`);
+    console.log(`${'='.repeat(60)}`);
+    
     const moduleDir = this.getModuleDir(moduleId);
     const entryPoint = config.entryPoint || 'server.js';
     const entryPath = path.join(moduleDir, entryPoint);
     
+    console.log(`📂 Directorio: ${moduleDir}`);
+    console.log(`📄 Entry point: ${entryPoint}`);
+    console.log(`🔌 Puerto: ${config.port}`);
+    
+    // Verificar que existe el directorio del módulo
+    if (!fs.existsSync(moduleDir)) {
+      const error = `❌ Directorio del módulo no existe: ${moduleDir}`;
+      console.error(error);
+      throw new Error(error);
+    }
+    console.log(`✅ Directorio del módulo existe`);
+    
     // Verificar que existe el entry point
     if (!fs.existsSync(entryPath)) {
-      throw new Error(`Entry point ${entryPoint} not found in ${moduleDir}`);
+      const error = `❌ Entry point ${entryPoint} no encontrado en ${moduleDir}`;
+      console.error(error);
+      
+      // Listar archivos disponibles para ayudar al debugging
+      const files = fs.readdirSync(moduleDir);
+      console.log(`📋 Archivos disponibles en el módulo:`, files);
+      
+      throw new Error(error);
+    }
+    console.log(`✅ Entry point encontrado: ${entryPath}`);
+    
+    // Verificar que existe package.json y node_modules
+    const packageJsonPath = path.join(moduleDir, 'package.json');
+    const nodeModulesPath = path.join(moduleDir, 'node_modules');
+    
+    if (fs.existsSync(packageJsonPath)) {
+      console.log(`✅ package.json encontrado`);
+      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      console.log(`   Nombre: ${pkg.name}`);
+      console.log(`   Versión: ${pkg.version}`);
+      console.log(`   Main: ${pkg.main || 'no especificado'}`);
+    } else {
+      console.warn(`⚠️  package.json NO encontrado`);
+    }
+    
+    if (fs.existsSync(nodeModulesPath)) {
+      const modules = fs.readdirSync(nodeModulesPath).length;
+      console.log(`✅ node_modules existe (${modules} paquetes)`);
+    } else {
+      console.warn(`⚠️  node_modules NO existe - puede necesitar npm install`);
     }
     
     // Verificar que no esté ya corriendo
     if (this.runningModules.has(moduleId)) {
       const existing = this.runningModules.get(moduleId);
       if (existing.status === 'running') {
-        console.log(`⚠️ Module ${moduleId} is already running on port ${existing.port}`);
+        console.log(`⚠️  Módulo ${moduleId} ya está corriendo en puerto ${existing.port}`);
+        console.log(`   PID: ${existing.process.pid}`);
+        console.log(`   Uptime: ${Math.floor((Date.now() - existing.startTime) / 1000)}s`);
+        console.log(`${'='.repeat(60)}\n`);
         return existing;
+      } else {
+        console.log(`⚠️  Módulo existe pero status=${existing.status}, reiniciando...`);
       }
     }
     
@@ -195,7 +281,19 @@ class ModuleManager {
       ...(config.envVars || {})
     };
     
-    console.log(`🚀 Starting module ${moduleId} on port ${config.port}...`);
+    console.log(`� Variables de entorno:`);
+    console.log(`   PORT=${env.PORT}`);
+    console.log(`   MODULE_ID=${env.MODULE_ID}`);
+    console.log(`   DB_COLLECTION=${env.DB_COLLECTION}`);
+    if (config.envVars) {
+      Object.keys(config.envVars).forEach(key => {
+        console.log(`   ${key}=${config.envVars[key]}`);
+      });
+    }
+    
+    console.log(`\n🚀 Ejecutando: node ${entryPoint}`);
+    console.log(`   Directorio de trabajo: ${moduleDir}`);
+    console.log(`${'='.repeat(60)}\n`);
     
     // Spawn proceso hijo
     const childProcess = spawn('node', [entryPoint], {
@@ -203,6 +301,8 @@ class ModuleManager {
       env,
       stdio: ['ignore', 'pipe', 'pipe']
     });
+    
+    console.log(`✅ Proceso iniciado con PID: ${childProcess.pid}`);
     
     // Estado del módulo
     const moduleState = {
@@ -225,17 +325,22 @@ class ModuleManager {
         message: log
       });
       
-      // Mantener solo los últimos 100 logs
-      if (moduleState.logs.stdout.length > 100) {
+      // Mantener solo los últimos 500 logs (aumentado de 100)
+      if (moduleState.logs.stdout.length > 500) {
         moduleState.logs.stdout.shift();
       }
       
-      console.log(`[${moduleId}] ${log.trim()}`);
+      console.log(`[${moduleId}:${childProcess.pid}] ${log.trim()}`);
       
       // Detectar si el módulo arrancó exitosamente
       if (log.includes('listening') || log.includes('started') || log.includes('running')) {
-        moduleState.status = 'running';
-        console.log(`✅ Module ${moduleId} is now running on port ${config.port}`);
+        if (moduleState.status === 'starting') {
+          moduleState.status = 'running';
+          console.log(`\n${'='.repeat(60)}`);
+          console.log(`✅ MÓDULO ${moduleId} CORRIENDO EN PUERTO ${config.port}`);
+          console.log(`   PID: ${childProcess.pid}`);
+          console.log(`${'='.repeat(60)}\n`);
+        }
       }
     });
     
@@ -247,34 +352,49 @@ class ModuleManager {
         message: log
       });
       
-      // Mantener solo los últimos 100 logs
-      if (moduleState.logs.stderr.length > 100) {
+      // Mantener solo los últimos 500 logs (aumentado de 100)
+      if (moduleState.logs.stderr.length > 500) {
         moduleState.logs.stderr.shift();
       }
       
-      console.error(`[${moduleId}] ERROR: ${log.trim()}`);
+      console.error(`[${moduleId}:${childProcess.pid}] ❌ ${log.trim()}`);
     });
     
     // Manejar salida del proceso
     childProcess.on('exit', (code, signal) => {
-      console.log(`⚠️ Module ${moduleId} exited with code ${code}, signal ${signal}`);
+      console.log(`\n${'='.repeat(60)}`);
+      console.log(`⚠️  MÓDULO ${moduleId} TERMINÓ`);
+      console.log(`   Código de salida: ${code}`);
+      console.log(`   Señal: ${signal || 'ninguna'}`);
+      console.log(`   Duración: ${Math.floor((Date.now() - moduleState.startTime) / 1000)}s`);
+      console.log(`${'='.repeat(60)}\n`);
+      
       moduleState.status = 'stopped';
       moduleState.exitCode = code;
       moduleState.exitSignal = signal;
       
       // Auto-restart si crasheó (máximo 3 intentos)
       if (code !== 0 && moduleState.restarts < 3) {
-        console.log(`♻️ Auto-restarting module ${moduleId}... (attempt ${moduleState.restarts + 1}/3)`);
+        console.log(`♻️  Auto-reiniciando módulo ${moduleId}... (intento ${moduleState.restarts + 1}/3)`);
+        console.log(`   Esperando 5 segundos...\n`);
         setTimeout(() => {
           moduleState.restarts++;
           this.startModule(moduleId, config);
-        }, 5000); // Esperar 5 segundos antes de reiniciar
+        }, 5000);
+      } else if (code !== 0) {
+        console.log(`❌ Módulo ${moduleId} falló después de ${moduleState.restarts} reintentos`);
+        console.log(`   No se reintentará más\n`);
       }
     });
     
     // Manejar errores del proceso
     childProcess.on('error', (error) => {
-      console.error(`❌ Error starting module ${moduleId}:`, error);
+      console.error(`\n${'='.repeat(60)}`);
+      console.error(`❌ ERROR AL INICIAR MÓDULO ${moduleId}`);
+      console.error(`   Error: ${error.message}`);
+      console.error(`   Stack: ${error.stack}`);
+      console.error(`${'='.repeat(60)}\n`);
+      
       moduleState.status = 'error';
       moduleState.error = error.message;
     });

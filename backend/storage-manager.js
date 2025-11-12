@@ -46,7 +46,7 @@ class StorageManager {
         await fs.mkdir(modulePath, { recursive: true });
 
         // Subcarpetas por tipo dentro de cada módulo
-        const subfolders = ['images', 'documents', 'evidences', 'logs', 'exports'];
+        const subfolders = ['images', 'documents', 'evidences', 'logs', 'exports', 'icons'];
         for (const subfolder of subfolders) {
           await fs.mkdir(path.join(modulePath, subfolder), { recursive: true });
         }
@@ -363,6 +363,38 @@ class StorageManager {
     } catch (error) {
       return null;
     }
+  }
+
+  /**
+   * Obtiene información de un archivo específico por módulo, categoría y fileId
+   */
+  async getFileInfo(moduleId, category, fileId) {
+    try {
+      const metadata = await this.getMetadata(fileId);
+      if (!metadata) return null;
+      
+      // Verificar que coincida el módulo y categoría
+      if (metadata.moduleId !== moduleId || metadata.category !== category) {
+        return null;
+      }
+      
+      const filePath = path.join(this.baseStoragePath, metadata.relativePath);
+      
+      return {
+        metadata,
+        filePath
+      };
+    } catch (error) {
+      console.error('[StorageManager] Error getting file info:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Lee un archivo del disco
+   */
+  async readFile(filePath) {
+    return await fs.readFile(filePath);
   }
 }
 

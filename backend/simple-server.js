@@ -28,34 +28,6 @@ const storageManager = new StorageManager({
 // Inicializar Module Manager
 const moduleManager = new ModuleManager();
 
-// Proxy reverso para módulo externo "Bitácora SOC"
-// - Elimina headers que bloquean iframes
-// - Reescribe rutas absolutas (/assets, /api, etc.) para que pasen por el proxy
-app.use('/proxy-bitacora', createProxyMiddleware({
-  target: 'http://10.0.100.13:8477',
-  changeOrigin: true,
-  ws: true,
-  selfHandleResponse: true,
-  pathRewrite: { '^/proxy-bitacora': '' },
-  onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
-    delete proxyRes.headers['x-frame-options'];
-    delete proxyRes.headers['content-security-policy'];
-    res.removeHeader('x-frame-options');
-    res.removeHeader('content-security-policy');
-
-    const contentType = proxyRes.headers['content-type'] || '';
-    if (contentType.includes('text/html')) {
-  let html = responseBuffer.toString('utf8');
-  html = html.replace(/(href|src)="\/(?!\/)/g, '$1="/proxy-bitacora/');
-  html = html.replace(/(href|src)='\/(?!\/)/g, "$1='/proxy-bitacora/");
-      return html;
-    }
-
-    return responseBuffer;
-  }),
-  logLevel: 'warn'
-}));
-
 app.use(helmet({ contentSecurityPolicy: false })); // Deshabilitar CSP para demo
 app.use(cors({ origin: '*', credentials:false })); // Permitir cualquier origen para demo
 app.use(bodyParser.json({ limit: '5mb' }));
@@ -79,6 +51,287 @@ let database = {
     secondaryColor: '#764ba2'
   }
 };
+
+// ==========================================
+// Dynamic reverse proxy for iframe modules
+// ==========================================
+
+function getDatabaseInstance(req) {
+  return req?.app?.locals?.database || database;
+}
+
+function stripIframeBlockingHeaders(proxyRes, res) {
+  delete proxyRes.headers['x-frame-options'];
+  delete proxyRes.headers['content-security-policy'];
+  res.removeHeader('x-frame-options');
+  res.removeHeader('content-security-policy');
+}
+
+function rewriteHtmlAssets(html, moduleId, targetUrl) {
+  const prefix = `/proxy/${moduleId}`;
+  
+  let rewritten = html;
+  
+  // 1. Reescribir todas las rutas absolutas que empiezan con / en src, href, etc.
+  // Esto incluye scripts, styles, images, etc.
+  rewritten = rewritten
+    .replace(/((?:src|href)\s*=\s*["'])\/(?!\/|proxy)/g, `$1${prefix}/`)
+    .replace(/(url\s*\(\s*["']?)\/(?!\/|proxy)/g, `$1${prefix}/`);
+  
+  // 2. Agregar <base href> como fallback
+  const baseTag = `<base href="${prefix}/">`;
+  
+  if (rewritten.includes('<head>')) {
+    rewritten = rewritten.replace('<head>', `<head>${baseTag}`);
+  } else if (rewritten.includes('<HEAD>')) {
+    rewritten = rewritten.replace('<HEAD>', `<HEAD>${baseTag}`);
+  }
+  
+  // 3. Interceptor JavaScript para peticiones dinámicas (fetch, XHR)
+  const interceptorScript = `
+<script>
+(function() {
+  const PROXY_PREFIX = '${prefix}';
+  
+  function rewriteUrl(url) {
+    if (!url) return url;
+    const urlStr = url.toString();
+    
+    // Si ya tiene el prefijo del proxy, no tocar
+    if (urlStr.includes(PROXY_PREFIX)) {
+      return urlStr;
+    }
+    
+    // Si es una ruta absoluta (empieza con /)
+    if (urlStr.startsWith('/') && !urlStr.startsWith('//')) {
+      const rewritten = PROXY_PREFIX + urlStr;
+      console.log('[Ramen Proxy]', urlStr, '=>', rewritten);
+      return rewritten;
+    }
+    
+    // Si es una URL completa a localhost:4000
+    if (urlStr.startsWith(window.location.origin + '/')) {
+      const path = urlStr.substring(window.location.origin.length);
+      if (!path.startsWith(PROXY_PREFIX)) {
+        const rewritten = window.location.origin + PROXY_PREFIX + path;
+        console.log('[Ramen Proxy]', urlStr, '=>', rewritten);
+        return rewritten;
+      }
+    }
+    
+    return urlStr;
+  }
+  
+  // Interceptar fetch
+  const originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    return originalFetch(rewriteUrl(url), options);
+  };
+  
+  // Interceptar XMLHttpRequest
+  const originalOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url, ...args) {
+    return originalOpen.call(this, method, rewriteUrl(url), ...args);
+  };
+  
+  console.log('[Ramen Proxy] Interceptores activados para', PROXY_PREFIX);
+})();
+</script>`;
+  
+  // Inyectar interceptor
+  if (rewritten.includes('</head>')) {
+    rewritten = rewritten.replace('</head>', interceptorScript + '</head>');
+  } else if (rewritten.includes('<head>')) {
+    rewritten = rewritten.replace(baseTag, baseTag + interceptorScript);
+  } else {
+    rewritten = interceptorScript + rewritten;
+  }
+  
+  console.log(`[Proxy] URLs reescritas con prefijo: ${prefix}`);
+  
+  return rewritten;
+}
+
+function attachProxyConfig(req, res, next) {
+  const moduleId = req.params.moduleId;
+  console.log(`[Proxy] Petición recibida para módulo: ${moduleId}, URL: ${req.url}`);
+  
+  const dbInstance = getDatabaseInstance(req);
+
+  if (!dbInstance) {
+    console.log(`[Proxy] ERROR: Database not ready`);
+    return res.status(503).json({ error: 'Database not ready' });
+  }
+
+  const module = dbInstance.modules.find(m => m._id === moduleId);
+
+  if (!module) {
+    console.log(`[Proxy] ERROR: Module not found: ${moduleId}`);
+    return res.status(404).json({ error: 'Module not found' });
+  }
+
+  if (!module.useProxy) {
+    console.log(`[Proxy] ERROR: Proxy not enabled for module: ${moduleId}`);
+    return res.status(400).json({ error: 'Proxy not enabled for this module' });
+  }
+
+  const target = module.proxyTarget || module.baseUrl;
+
+  if (!target) {
+    console.log(`[Proxy] ERROR: Proxy target missing for module: ${moduleId}`);
+    return res.status(400).json({ error: 'Proxy target missing for module' });
+  }
+
+  console.log(`[Proxy] Configurado proxy: ${moduleId} → ${target}`);
+  req.proxyModule = {
+    id: moduleId,
+    target
+  };
+  next();
+}
+
+const moduleProxyMiddleware = createProxyMiddleware({
+  target: 'http://localhost', // Overriden by router per request
+  changeOrigin: true,
+  ws: true,
+  selfHandleResponse: true,
+  timeout: 60000, // 60 segundos timeout
+  proxyTimeout: 60000, // 60 segundos timeout del proxy
+  router: (req) => {
+    const target = req.proxyModule?.target || 'http://localhost';
+    console.log(`[Proxy] Router: ${req.url} → ${target}`);
+    return target;
+  },
+  pathRewrite: (path, req) => {
+    const moduleId = req.proxyModule?.id;
+    if (!moduleId) return path;
+    const prefix = `/proxy/${moduleId}`;
+    const rewritten = path.startsWith(prefix) ? path.slice(prefix.length) : path;
+    const finalPath = rewritten || '/';
+    console.log(`[Proxy] PathRewrite: ${path} → ${finalPath}`);
+    return finalPath;
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    const logMessage = `${req.method} ${proxyReq.path}`;
+    console.log(`[Proxy] Enviando a servidor externo: ${logMessage}`);
+    console.log(`[Proxy] Target: ${req.proxyModule?.target}`);
+    
+    // Re-enviar el body para peticiones POST/PUT/PATCH
+    // Como bodyParser ya consumió el stream, necesitamos recrear el body
+    if (req.body && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+      const bodyData = JSON.stringify(req.body);
+      console.log(`[Proxy] Body a enviar: ${bodyData}`);
+      
+      // Actualizar headers
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      
+      // Escribir el body al stream del proxy
+      proxyReq.write(bodyData);
+    }
+    
+    // Registrar en logs del módulo
+    if (req.proxyModule?.id && moduleManager) {
+      moduleManager.addProxyLog(req.proxyModule.id, 'request', logMessage);
+    }
+    
+    // Registrar en logs del sistema
+    if (req.proxyModule?.id && logger) {
+      logger.info(
+        'proxy',
+        'request',
+        req.proxyModule.id,
+        `${req.method} ${proxyReq.path} → ${req.proxyModule.target}`
+      );
+    }
+  },
+  onProxyRes: responseInterceptor(async (responseBuffer, proxyRes, req, res) => {
+    const logMessage = `${proxyRes.statusCode} ${req.method} ${req.url}`;
+    console.log(`[Proxy] Respuesta recibida: ${logMessage}`);
+    
+    // Registrar en logs del módulo
+    if (req.proxyModule?.id && moduleManager) {
+      moduleManager.addProxyLog(req.proxyModule.id, 'response', logMessage);
+    }
+    
+    // Registrar en logs del sistema
+    if (req.proxyModule?.id && logger) {
+      const level = proxyRes.statusCode >= 400 ? 'warning' : 'info';
+      logger.log(
+        level,
+        'proxy',
+        'response',
+        req.proxyModule.id,
+        `${proxyRes.statusCode} ${req.method} ${req.url}`
+      );
+    }
+    
+    if (req.proxyModule?.id) {
+      stripIframeBlockingHeaders(proxyRes, res);
+    }
+
+    const contentType = proxyRes.headers['content-type'] || '';
+    
+    // Procesar HTML
+    if (req.proxyModule?.id && contentType.includes('text/html')) {
+      const html = responseBuffer.toString('utf8');
+      console.log(`[Proxy] Procesando HTML para módulo: ${req.proxyModule.id}, URL: ${req.url}`);
+      const rewritten = rewriteHtmlAssets(html, req.proxyModule.id, req.proxyModule.target);
+      return rewritten;
+    }
+    
+    // Procesar JavaScript - reemplazar URLs hardcodeadas
+    if (req.proxyModule?.id && (contentType.includes('javascript') || contentType.includes('application/json'))) {
+      const js = responseBuffer.toString('utf8');
+      const prefix = `/proxy/${req.proxyModule.id}`;
+      
+      // Reemplazar rutas absolutas comunes en el JS
+      // Ej: "/api/logo" -> "/proxy/bitacora-soc/api/logo"
+      const rewritten = js
+        .replace(/["']\/api\//g, `"${prefix}/api/`)
+        .replace(/["']\/uploads\//g, `"${prefix}/uploads/`)
+        .replace(/["']\/assets\//g, `"${prefix}/assets/`)
+        .replace(/["']\/static\//g, `"${prefix}/static/`);
+      
+      if (rewritten !== js) {
+        console.log(`[Proxy] JavaScript reescrito para: ${req.url}`);
+      }
+      
+      return rewritten;
+    }
+
+    return responseBuffer;
+  }),
+  onError: (err, req, res) => {
+    const errorMessage = `ERROR: ${err.message} - URL: ${req.url}`;
+    console.error(`[Proxy] ${errorMessage}`);
+    console.error(`[Proxy] Target: ${req.proxyModule?.target}`);
+    
+    // Registrar error en logs del módulo
+    if (req.proxyModule?.id && moduleManager) {
+      moduleManager.addProxyLog(req.proxyModule.id, 'error', errorMessage);
+    }
+    
+    // Registrar error en logs del sistema
+    if (req.proxyModule?.id && logger) {
+      logger.error(
+        'proxy',
+        'error',
+        req.proxyModule.id,
+        `${err.message} - ${req.url} → ${req.proxyModule.target}`
+      );
+    }
+    
+    res.status(502).json({ 
+      error: 'Error al conectar con el módulo externo',
+      details: err.message,
+      target: req.proxyModule?.target
+    });
+  },
+  logLevel: 'warn'
+});
+
+app.use('/proxy/:moduleId', attachProxyConfig, moduleProxyMiddleware);
 
 // Initialize demo data
 async function initDB() {
@@ -126,8 +379,10 @@ async function initDB() {
     {
       _id: 'bitacora-soc',
       name: 'Bitacora SOC',
-      baseUrl: 'http://localhost:4000/proxy-bitacora',
+      baseUrl: 'http://10.0.100.13:8477',
       embedType: 'iframe',
+      useProxy: true,
+      proxyTarget: 'http://10.0.100.13:8477',
       moduleType: 'external',
       allowedRoles: ['Owner', 'Admin'],
       description: 'Sistema de bitácora SOC externo (requiere proxy para eliminar X-Frame-Options)',
@@ -1012,6 +1267,28 @@ app.post('/api/modules/:id/restart', async (req, res) => {
 app.get('/api/modules/:id/status', (req, res) => {
   try {
     const moduleId = req.params.id;
+    const dbInstance = getDatabaseInstance(req);
+    const module = dbInstance?.modules.find(m => m._id === moduleId);
+    
+    // Si es un módulo externo, verificar si el proxy está activo
+    if (module && module.moduleType === 'external' && module.useProxy) {
+      // Los módulos externos están "online" si tienen logs recientes del proxy
+      const proxyLogs = moduleManager.getProxyLogs(moduleId, 5);
+      const hasRecentActivity = proxyLogs && proxyLogs.length > 0;
+      
+      return res.json({
+        success: true,
+        moduleId,
+        status: 'external', // Estado especial para módulos externos
+        moduleType: 'external',
+        proxyTarget: module.proxyTarget || module.baseUrl,
+        useProxy: true,
+        hasRecentActivity,
+        recentLogs: proxyLogs || []
+      });
+    }
+    
+    // Para módulos internos, usar el método normal
     const status = moduleManager.getModuleStatus(moduleId);
     
     res.json({
@@ -1020,6 +1297,82 @@ app.get('/api/modules/:id/status', (req, res) => {
     });
   } catch (error) {
     console.error('Error getting module status:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Obtener logs completos de un módulo
+app.get('/api/modules/:id/logs', (req, res) => {
+  try {
+    const moduleId = req.params.id;
+    const limit = parseInt(req.query.limit) || 100;
+    const type = req.query.type; // 'stdout', 'stderr', or undefined for both
+    
+    const dbInstance = getDatabaseInstance(req);
+    const module = dbInstance?.modules.find(m => m._id === moduleId);
+    
+    // Si es un módulo externo con proxy, devolver logs del proxy
+    if (module && module.moduleType === 'external' && module.useProxy) {
+      const proxyLogs = moduleManager.getProxyLogs(moduleId, limit);
+      
+      return res.json({
+        success: true,
+        moduleId,
+        moduleType: 'external',
+        status: module.status || 'online',
+        logs: {
+          proxy: proxyLogs,
+          total: proxyLogs.length
+        }
+      });
+    }
+    
+    // Para módulos internos, usar el código existente
+    const status = moduleManager.getModuleStatus(moduleId);
+    
+    if (status.status === 'not_running') {
+      return res.json({
+        success: true,
+        moduleId,
+        status: 'not_running',
+        message: 'Module is not running, no logs available',
+        logs: {
+          stdout: [],
+          stderr: []
+        }
+      });
+    }
+    
+    // Obtener el estado completo del módulo (con todos los logs)
+    const moduleState = moduleManager.runningModules.get(moduleId);
+    
+    if (!moduleState) {
+      return res.status(404).json({
+        success: false,
+        error: 'Module state not found'
+      });
+    }
+    
+    const logs = {
+      stdout: type === 'stderr' ? [] : moduleState.logs.stdout.slice(-limit),
+      stderr: type === 'stdout' ? [] : moduleState.logs.stderr.slice(-limit),
+      totalStdout: moduleState.logs.stdout.length,
+      totalStderr: moduleState.logs.stderr.length
+    };
+    
+    res.json({
+      success: true,
+      moduleId,
+      status: moduleState.status,
+      port: moduleState.port,
+      uptime: Date.now() - moduleState.startTime.getTime(),
+      logs
+    });
+  } catch (error) {
+    console.error('Error getting module logs:', error);
     res.status(500).json({ 
       success: false,
       error: error.message 
@@ -1303,6 +1656,78 @@ const upload = multer({
     } else {
       cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
     }
+  }
+});
+
+// POST /api/modules/:id/icon - Subir ícono de módulo
+app.post('/api/modules/:id/icon', upload.single('icon'), async (req, res) => {
+  try {
+    const moduleId = req.params.id;
+    const module = database.modules.find(m => m._id === moduleId);
+    
+    if (!module) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No icon file provided' });
+    }
+    
+    // Guardar en storage usando uploadFile
+    const metadata = {
+      originalName: req.file.originalname,
+      mimetype: req.file.mimetype
+    };
+    
+    const result = await storageManager.uploadFile(
+      moduleId,
+      'icons',
+      req.file.buffer,
+      metadata
+    );
+    
+    // URL pública del ícono
+    const iconUrl = `/api/storage/${moduleId}/icons/${result.fileId}`;
+    
+    // Actualizar el módulo con la nueva URL del ícono
+    const idx = database.modules.findIndex(m => m._id === moduleId);
+    database.modules[idx].icon = iconUrl;
+    database.modules[idx].updatedAt = new Date();
+    
+    res.json({
+      success: true,
+      iconUrl,
+      module: database.modules[idx]
+    });
+  } catch (error) {
+    console.error('Error uploading module icon:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/storage/:moduleId/:category/:fileId - Servir archivos públicos (iconos)
+app.get('/api/storage/:moduleId/:category/:fileId', async (req, res) => {
+  try {
+    const { moduleId, category, fileId } = req.params;
+    
+    // Obtener info del archivo
+    const fileInfo = await storageManager.getFileInfo(moduleId, category, fileId);
+    
+    if (!fileInfo) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    // Leer archivo
+    const fileBuffer = await storageManager.readFile(fileInfo.filePath);
+    
+    // Configurar headers
+    res.set('Content-Type', fileInfo.metadata.mimetype);
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache 24 horas
+    
+    res.send(fileBuffer);
+  } catch (error) {
+    console.error('Error serving file:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

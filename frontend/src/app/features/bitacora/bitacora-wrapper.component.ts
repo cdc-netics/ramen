@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ElementRef, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -12,6 +12,7 @@ export class BitacoraWrapperComponent implements OnInit {
   @Input() moduleId: string = '';
   @Input() moduleType: string = 'external';
   @Input() embedType: string = 'iframe';
+  @ViewChild('moduleIframe') moduleIframe?: ElementRef<HTMLIFrameElement>;
   
   iframeUrl: SafeResourceUrl | null = null;
   loading = true;
@@ -60,24 +61,12 @@ export class BitacoraWrapperComponent implements OnInit {
       
       // Si es iframe, usar postMessage (más seguro)
       if (this.embedType === 'iframe') {
-        this.iframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.url);
-        
-        // Esperar a que el iframe cargue
-        setTimeout(() => {
-          const iframe = document.querySelector('iframe') as HTMLIFrameElement;
-          if (iframe) {
-            iframe.addEventListener('load', () => {
-              // Enviar token vía postMessage
-              iframe.contentWindow?.postMessage({
-                type: 'SSO_TOKEN',
-                token: ssoToken,
-                user: response.user
-              }, this.url);
-              
-              console.log('✅ Token SSO enviado al módulo vía postMessage');
-            });
-          }
-        }, 500);
+        this.iframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(urlWithToken);
+        this.attachTokenOnLoad({
+          token: ssoToken,
+          user: response.user,
+          targetOrigin: this.getTargetOrigin(urlWithToken)
+        });
       } 
       // Si es link externo, abrir en nueva pestaña con token en URL
       else if (this.embedType === 'link') {
@@ -97,6 +86,35 @@ export class BitacoraWrapperComponent implements OnInit {
       }
       
       this.loading = false;
+    }
+  }
+
+  private attachTokenOnLoad(payload: { token: string; user: any; targetOrigin: string }) {
+    setTimeout(() => {
+      const iframeElement = this.moduleIframe?.nativeElement;
+      if (!iframeElement) {
+        return;
+      }
+  
+      const sendToken = () => {
+        iframeElement.contentWindow?.postMessage({
+          type: 'SSO_TOKEN',
+          token: payload.token,
+          user: payload.user
+        }, payload.targetOrigin);
+  
+        console.log('✅ Token SSO enviado al módulo vía postMessage');
+      };
+  
+      iframeElement.addEventListener('load', () => sendToken(), { once: true });
+    });
+  }
+
+  private getTargetOrigin(url: string): string {
+    try {
+      return new URL(url).origin;
+    } catch {
+      return '*';
     }
   }
 }

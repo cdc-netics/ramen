@@ -18,14 +18,24 @@
 ## ✅ Características principales
 
 ### Identidad y gobierno
-- Autenticación JWT integrada (8 h de validez) con un solo punto de login.
+- Autenticación JWT integrada (8 h de validez) con un solo punto de login.
 - RBAC con roles Owner / Admin / SOC / User y guardas en el frontend Angular.
-- Logger estructurado con consultas por nivel, módulo, usuario y limpieza controlada.
+- Logger estructurado centralizado que registra:
+  - Acciones de usuarios (login, edición, consultas).
+  - Peticiones y respuestas del proxy a módulos externos.
+  - Códigos de estado HTTP (200, 304, 408, etc.) con nivel apropiado (info/warning/error).
+  - Consultas por nivel, módulo, usuario y limpieza controlada.
 
 ### Orquestación de módulos
 - Registro de módulos internos (proxy Node.js) y externos (iframe/link/proxy).
 - **Module Manager** para validar, instalar dependencias y ejecutar módulos Node.js aislados.
-- Proxy inverso con limpieza de `X-Frame-Options` para módulos que deben mostrarse en iframes.
+- **Proxy inverso inteligente** con:
+  - Limpieza de `X-Frame-Options` para módulos externos que deben mostrarse en iframes.
+  - Reescritura automática de URLs en HTML y JavaScript para assets y APIs.
+  - Inyección de interceptores JavaScript para fetch() y XMLHttpRequest.
+  - Manejo correcto de POST/PUT/PATCH con reenvío de body JSON.
+  - Timeouts configurables (60s) para servidores lentos.
+  - Logging centralizado de todas las peticiones y respuestas del proxy.
 - Eliminación de módulos completa (estado en memoria + archivos en disco).
 
 ### Configuración dinámica
@@ -148,6 +158,7 @@ ramen/
 |-----------|-----------|
 | [`CONFIGURACION_MODULOS.md`](CONFIGURACION_MODULOS.md) | Arquitectura, endpoints y pruebas del sistema de plantillas/SLAs/listas. |
 | [`MODULOS_INTERNOS.md`](MODULOS_INTERNOS.md) | Pasos para construir un módulo interno Angular y publicarlo en `modules/`. |
+| [`MODULOS_EXTERNOS.md`](MODULOS_EXTERNOS.md) | **NUEVO** - Integración de sistemas externos vía proxy (Bitácora SOC, SIEM, etc.). |
 | [`STORAGE_SETUP.md`](STORAGE_SETUP.md) & [`ARQUITECTURA_STORAGE.md`](ARQUITECTURA_STORAGE.md) | Diseño del storage modular, drivers soportados y estrategias de migración. |
 | [`IFRAME_TROUBLESHOOTING.md`](IFRAME_TROUBLESHOOTING.md) | Motivos de bloqueos en iframes y configuración del proxy para evitarlos. |
 | [`README_FRONTEND.md`](frontend/README_FRONTEND.md) | Instrucciones detalladas para el cliente Angular, guardas y componentes. |
